@@ -1,3 +1,4 @@
+#test_lexer.py
 import pytest
 from lexer import Lexer
 from tokens import TokenType
@@ -261,12 +262,12 @@ def test_scan_identifier_keywords():
             ("if", TokenType.IF),
             ("else", TokenType.ELSE),
             ("print", TokenType.PRINT),
-            ("true", TokenType.TRUE),
-            ("false", TokenType.FALSE)
+            ("True", TokenType.TRUE),
+            ("False", TokenType.FALSE)
     ]
 
 
-    source = "let if else print true false"
+    source = "let if else print True False"
     lexer = Lexer(source)
     tokens = lexer.scan_tokens()
 
@@ -365,20 +366,20 @@ def test_empty_string():
     tokens = Lexer('""').scan_tokens()
 
     assert tokens[0].type == TokenType.STRING
-    assert tokens[0].value == '""'
+    assert tokens[0].value == ""
 
 
 def test_string_with_escape():
     tokens = Lexer(r'"Hi\nTaha"').scan_tokens()
 
     assert tokens[0].type == TokenType.STRING
-    assert tokens[0].value == r'"Hi\nTaha"'
+    assert tokens[0].value == r"Hi\nTaha"
 
 
 def test_string_with_escaped_quotes():
     tokens = Lexer(r'"Say \"Hi\""').scan_tokens()
 
-    assert tokens[0].value == r'"Say \"Hi\""'
+    assert tokens[0].value == r"Say \"Hi\""
 
 
 def test_unterminated_string():
@@ -414,13 +415,13 @@ def test_string_with_backslash_escape():
     tokens = Lexer(r'"A\\B"').scan_tokens()
 
     assert tokens[0].type == TokenType.STRING
-    assert tokens[0].value == r'"A\\B"'
+    assert tokens[0].value == r"A\\B"
 
 
 def test_string_with_tab_escape():
     tokens = Lexer(r'"A\tB"').scan_tokens()
 
-    assert tokens[0].value == r'"A\tB"'
+    assert tokens[0].value == r"A\tB"
 
 
 def test_string_with_backslash_at_eof():

@@ -1,3 +1,5 @@
+#errors.py
+
 class TahaLangError(Exception):
     def __init__(self, message, line, column):
         self.message = message
@@ -51,6 +53,11 @@ class TahaSyntaxError(TahaLangError):
 
 
     @classmethod
+    def expected_primary(cls, line, column, got):
+        return cls(f"Expected INTEGER, FLOAT, STRING, TRUE, FALSE, IDENTIFIER , got: {got}", line, column)
+
+
+    @classmethod
     def unexpected_eof(cls, line, column, expected):
         return cls(f"Unexpected EOF, expected: {expected}", line, column)
 
@@ -58,6 +65,10 @@ class TahaSyntaxError(TahaLangError):
     @classmethod
     def invalid_expression(cls, line, column):
         return cls("Invalid expression.", line, column)
+
+    @classmethod
+    def expected_eof_or_newline(cls, line, column, got):
+        return cls(f"Expected EOF or NEWLINE, got: {got}", line, column)
 
 
 class TahaRuntimeError(TahaLangError):

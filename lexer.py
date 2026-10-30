@@ -1,3 +1,5 @@
+#lexer.py
+
 from tokens import Token, TokenType
 from errors import LexicalError
 
@@ -20,8 +22,8 @@ KEYWORDS = {
     "if": TokenType.IF,
     "else": TokenType.ELSE,
     "print": TokenType.PRINT,
-    "true": TokenType.TRUE,
-    "false": TokenType.FALSE
+    "True": TokenType.TRUE,
+    "False": TokenType.FALSE
 }
 
 ESCAPE_ALLOWED = {"n", "t", "\\", "\""}
@@ -224,17 +226,14 @@ class Lexer:
         string = ""
 
         if self.peek() == "\"":
-            string += "\""
             self.advance()
 
         while not self.is_at_end():
             if self.peek() == "\"":
-                string += "\""
                 self.advance()
                 return string
 
             elif self.peek() == "\\":
-
                 if self.peek_next() is None:
                     raise LexicalError.unterminated_string(
                         line=self.line,
@@ -245,13 +244,12 @@ class Lexer:
                     string += "\\"
                     self.advance()
                     string += self.advance()
-
                 else:
                     raise LexicalError.unexpected_escape(
                         line=self.line,
                         column=self.column
                     )
-        
+
             elif self.peek() == "\n":
                 raise LexicalError.newline_in_string(
                     line=self.line,
@@ -262,11 +260,10 @@ class Lexer:
                 string += self.peek()
                 self.advance()
 
-        else:
-            raise LexicalError.unterminated_string(
-                self.line,
-                self.column
-            )
+        raise LexicalError.unterminated_string(
+            self.line,
+            self.column
+        )
 
 
     def add_token(self, token_type, value, line, column):

@@ -1,3 +1,5 @@
+#test_errors.py
+
 from errors import (
     LexicalError,
     TahaSyntaxError,
