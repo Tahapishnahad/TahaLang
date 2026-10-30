@@ -24,6 +24,7 @@ class TokenType(Enum):
     STAR = "STAR" # *
     SLASH = "SLASH" # /
     PERCENT = "PERCENT" # %
+    BANG = "BANG" # !
 
     EQUAL_EQUAL = "EQUAL_EQUAL" # ==
     BANG_EQUAL = "BANG_EQUAL" # !=

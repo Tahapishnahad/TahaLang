@@ -12,7 +12,7 @@ SINGLE_CHAR_TOKENS = {
     "(": TokenType.LEFT_PAREN,
     ")": TokenType.RIGHT_PAREN,
     "{": TokenType.LEFT_BRACE,
-    "}": TokenType.RIGHT_BRACE,
+    "}": TokenType.RIGHT_BRACE
 }
 
 COMPOUND_OPERATOR_STARTS = {"=", "<", ">", "!"}
@@ -131,11 +131,7 @@ class Lexer:
                     if self.peek_next() == "=":
                         self.scan_two_tokens(TokenType.BANG_EQUAL, "!=")
                     else:
-                        raise LexicalError.unexpected_character(
-                            self.peek(),
-                            self.line,
-                            self.column
-                        )
+                        self.scan_token(TokenType.BANG, "!")
 
 
     def scan_identifier(self):

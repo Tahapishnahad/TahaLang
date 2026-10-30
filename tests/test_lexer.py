@@ -187,7 +187,7 @@ def test_scan_operators():
 
 
 def test_all_single_character_operators():
-    source = "+ - * / % ( ) { } = < >"
+    source = "+ - * / % ( ) { } = < > !"
     lexer = Lexer(source)
     tokens = lexer.scan_tokens()
 
@@ -204,6 +204,7 @@ def test_all_single_character_operators():
         (TokenType.EQUAL, "="),
         (TokenType.LESS, "<"),
         (TokenType.GREATER, ">"),
+        (TokenType.BANG, "!")
     ]
 
     actual = [(token.type, token.value) for token in tokens[:-1]]
@@ -340,18 +341,6 @@ def test_unexpected_character():
     assert error.line == 1
     assert error.column == 1
     assert "@" in error.message
-
-
-def test_bang_without_equals():
-    lexer = Lexer("!")
-
-    with pytest.raises(LexicalError) as exc_info:
-        lexer.scan_tokens()
-
-    error = exc_info.value
-    assert error.line == 1
-    assert error.column == 1
-
 
 def test_bang_equal_is_valid():
     lexer = Lexer("!=")

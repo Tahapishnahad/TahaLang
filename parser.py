@@ -6,7 +6,6 @@ from lexer import Lexer
 from ast_nodes import (
     Program,
     Statement,
-    Expression,
     LetStatement,
     PrintStatement,
     BlockStatement,
@@ -25,6 +24,11 @@ BINARY_OPERATORS = {
     TokenType.STAR,
     TokenType.SLASH,
     TokenType.PERCENT,
+}
+
+UNARY_OPERATORS = {
+    TokenType.MINUS,
+    TokenType.BANG
 }
 
 PRECEDENCE = {
@@ -207,7 +211,7 @@ class Parser:
 
 
     def parse_binary_expression(self, min_precedence: int):
-        left = self.parse_primary()
+        left = self.parse_unary()
 
         while True:
             current_token = self.current
@@ -227,8 +231,18 @@ class Parser:
 
         return left
 
-                
+    def parse_unary(self):
+        left = self.current
 
+
+        if left.type in UNARY_OPERATORS:
+            self.advance()
+            operand = self.parse_unary()
+
+            return UnaryExpression(operand=operand, operator=left.type)
+
+        return self.parse_primary()
+    
     @property
     def current(self) -> Token:
         return self.tokens[self.position]
@@ -292,7 +306,7 @@ class Parser:
 def main():
     p = Parser(
         Lexer(
-            'let taha = "YES"'
+            'print(10 * --5)'
         ).scan_tokens()
     )
 
