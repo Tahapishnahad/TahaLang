@@ -5,6 +5,7 @@ from ast_nodes import (
     Program,
     Statement,
     Expression,
+    SourceLocation,
     LetStatement,
     PrintStatement,
     BlockStatement,
@@ -19,7 +20,8 @@ from ast_nodes import (
 
 
 def test_program_stores_statements():
-    statement = PrintStatement(expression=NumberLiteral(value=10))
+    statement = PrintStatement(
+        expression=NumberLiteral(value=10, location=SourceLocation(line=2, column=6)))
     program = Program(statements=[statement])
 
     assert len(program.statements) == 1
@@ -27,7 +29,7 @@ def test_program_stores_statements():
 
 
 def test_let_statement():
-    value = NumberLiteral(value=13)
+    value = NumberLiteral(value=13, location=SourceLocation(2, 6))
     statement = LetStatement(name="age", value=value)
 
     assert statement.name == "age"
@@ -35,7 +37,7 @@ def test_let_statement():
 
 
 def test_print_statement():
-    expression = StringLiteral(value="Hello")
+    expression = StringLiteral(value="Hello", location=SourceLocation(2, 6))
     statement = PrintStatement(expression=expression)
 
     assert statement.expression is expression
@@ -43,8 +45,8 @@ def test_print_statement():
 
 def test_block_statement():
     statements = [
-        LetStatement(name="x", value=NumberLiteral(value=5)),
-        PrintStatement(expression=Identifier(name="x")),
+        LetStatement(name="x", value=NumberLiteral(value=5, location=SourceLocation(2, 6))),
+        PrintStatement(expression=Identifier(name="x", location=SourceLocation(2, 6))),
     ]
     block = BlockStatement(statements=statements)
 
@@ -53,7 +55,7 @@ def test_block_statement():
 
 
 def test_if_statement_with_else():
-    condition = BooleanLiteral(value=True)
+    condition = BooleanLiteral(value=True, location=SourceLocation(2, 6))
     then_branch = BlockStatement(statements=[])
     else_branch = BlockStatement(statements=[])
 
@@ -70,7 +72,7 @@ def test_if_statement_with_else():
 
 def test_if_statement_without_else():
     statement = IfStatement(
-        condition=BooleanLiteral(value=False),
+        condition=BooleanLiteral(value=False, location=SourceLocation(2, 6)),
         then_branch=BlockStatement(statements=[]),
     )
 
@@ -78,47 +80,48 @@ def test_if_statement_without_else():
 
 
 def test_number_literal_integer():
-    node = NumberLiteral(value=13)
+    node = NumberLiteral(value=13, location=SourceLocation(2, 6))
 
     assert node.value == 13
     assert type(node.value) is int
 
 
 def test_number_literal_float():
-    node = NumberLiteral(value=3.5)
+    node = NumberLiteral(value=3.5, location=SourceLocation(2, 6))
 
     assert node.value == 3.5
     assert type(node.value) is float
 
 
 def test_string_literal():
-    node = StringLiteral(value="Hello\nTahaLang")
+    node = StringLiteral(value="Hello\nTahaLang", location=SourceLocation(2, 6))
 
     assert node.value == "Hello\nTahaLang"
 
 
 def test_boolean_literal():
-    true_node = BooleanLiteral(value=True)
-    false_node = BooleanLiteral(value=False)
+    true_node = BooleanLiteral(value=True, location=SourceLocation(2, 6))
+    false_node = BooleanLiteral(value=False, location=SourceLocation(2, 6))
 
     assert true_node.value is True
     assert false_node.value is False
 
 
 def test_identifier():
-    node = Identifier(name="total")
+    node = Identifier(name="total", location=SourceLocation(2, 6))
 
     assert node.name == "total"
 
 
 def test_binary_expression():
-    left = Identifier(name="age")
-    right = NumberLiteral(value=5)
+    left = Identifier(name="age", location=SourceLocation(2, 6))
+    right = NumberLiteral(value=5, location=SourceLocation(2, 6))
 
     expression = BinaryExpression(
         left=left,
         operator=TokenType.PLUS,
         right=right,
+        location=SourceLocation(2, 6)
     )
 
     assert expression.left is left
@@ -127,11 +130,12 @@ def test_binary_expression():
 
 
 def test_unary_expression():
-    operand = NumberLiteral(value=5)
+    operand = NumberLiteral(value=5, location=SourceLocation(2, 6))
 
     expression = UnaryExpression(
         operand=operand,
         operator=TokenType.MINUS,
+        location=SourceLocation(2, 6)
     )
 
     assert expression.operand is operand
@@ -139,6 +143,24 @@ def test_unary_expression():
 
 
 def test_ast_node_inheritance():
-    assert isinstance(NumberLiteral(value=1),Expression)
+    assert isinstance(NumberLiteral(value=1, location=SourceLocation(2, 6)),Expression)
 
-    assert isinstance(LetStatement(name="x", value=NumberLiteral(value=1)),Statement)
+    assert isinstance(LetStatement(name="x", value=NumberLiteral(value=1, location=SourceLocation(2, 6))),Statement)
+
+def test_source_location():
+    location = SourceLocation(line=1, column=3)
+
+    assert location.line == 1
+    assert location.column == 3
+
+def test_source_location_in_expression():
+    expression = BinaryExpression(
+    left=NumberLiteral(2, SourceLocation(3, 4)),
+    operator=TokenType.PLUS,
+    right=NumberLiteral(4, SourceLocation(3, 8)),
+    location=SourceLocation(3, 4)
+)
+
+    assert expression.location.line == 3
+    assert expression.location.column == 4
+

@@ -6,6 +6,7 @@ from lexer import Lexer
 from ast_nodes import (
     Program,
     Statement,
+    SourceLocation,
     LetStatement,
     PrintStatement,
     BlockStatement,
@@ -17,14 +18,6 @@ from ast_nodes import (
     BinaryExpression,
     UnaryExpression,
 )
-
-BINARY_OPERATORS = {
-    TokenType.PLUS,
-    TokenType.MINUS,
-    TokenType.STAR,
-    TokenType.SLASH,
-    TokenType.PERCENT,
-}
 
 UNARY_OPERATORS = {
     TokenType.MINUS,
@@ -156,10 +149,21 @@ class Parser:
             while self.current.type == TokenType.NEWLINE:
                 self.advance()
 
+            if self.current.type == TokenType.EOF:
+                raise TahaSyntaxError.unexpected_token_type(
+                    self.current.line,
+                    self.current.column,
+                    expected=TokenType.RIGHT_BRACE,
+                    got=TokenType.EOF
+                )
+
             if self.current.type != TokenType.RIGHT_BRACE:
                 statements.append(self.parse_statement())
-            else:
-                break
+                if self.check(TokenType.RIGHT_BRACE):
+                    break
+                else:
+                    self.consume(TokenType.NEWLINE)
+            
 
         self.consume(TokenType.RIGHT_BRACE)
 
@@ -171,31 +175,50 @@ class Parser:
 
     def parse_primary(self):
         current_token = self.current
+        current_token_source_locator = SourceLocation(line=current_token.line, column=current_token.column)
 
         match current_token.type:
             case TokenType.INTEGER:
                 self.advance()
-                return NumberLiteral(int(current_token.value))
+                return NumberLiteral(
+                    int(current_token.value),
+                    current_token_source_locator
+                )
 
             case TokenType.FLOAT:
                 self.advance()
-                return NumberLiteral(float(current_token.value))
+                return NumberLiteral(
+                    float(current_token.value),
+                    current_token_source_locator
+                )
 
             case TokenType.STRING:
                 self.advance()
-                return StringLiteral(current_token.value)
+                return StringLiteral(
+                    current_token.value,
+                    current_token_source_locator
+                )
 
             case TokenType.TRUE:
                 self.advance()
-                return BooleanLiteral(True)
+                return BooleanLiteral(
+                    True,
+                    current_token_source_locator
+                )
 
             case TokenType.FALSE:
                 self.advance()
-                return BooleanLiteral(False)
+                return BooleanLiteral(
+                    False,
+                    current_token_source_locator
+                )
 
             case TokenType.IDENTIFIER:
                 self.advance()
-                return Identifier(current_token.value)
+                return Identifier(
+                    current_token.value,
+                    current_token_source_locator
+                )
 
             case TokenType.LEFT_PAREN:
                 self.advance()
@@ -205,8 +228,8 @@ class Parser:
 
             case _:
                 raise TahaSyntaxError.invalid_expression(
-                    current_token.line,
-                    current_token.column
+                    current_token_source_locator.line,
+                    current_token_source_locator.column
                 )
 
 
@@ -227,19 +250,27 @@ class Parser:
             op = self.advance()
             right = self.parse_binary_expression(precedence + 1)
 
-            left = BinaryExpression(left, op.type, right)
+            left = BinaryExpression(
+                left=left, 
+                operator=op.type, 
+                right=right,
+                location=SourceLocation(line=left.location.line, column=left.location.column)
+            )
 
         return left
 
     def parse_unary(self):
         left = self.current
 
-
         if left.type in UNARY_OPERATORS:
             self.advance()
             operand = self.parse_unary()
 
-            return UnaryExpression(operand=operand, operator=left.type)
+            return UnaryExpression(
+                operand=operand,
+                operator=left.type,
+                location=SourceLocation(line=left.line, column=left.column)
+            )
 
         return self.parse_primary()
     
@@ -260,6 +291,9 @@ class Parser:
             raise ValueError("Inner Error: Empty tokens is invalid. checkout lexer.py")
 
         for token in tokens:
+            if not isinstance(token, Token):
+                raise ValueError("Inner Error: 'tokens' memebers must be Token.")
+            
             types.append(token.type)
         
         if (not TokenType.EOF in types) or (types.count(TokenType.EOF) > 1) or types[-1] != TokenType.EOF:
@@ -268,11 +302,13 @@ class Parser:
         self._tokens = tokens
 
     def advance(self) -> Token:
-        if self.current.type == TokenType.EOF:
-            return self.current
 
         if self.position > len(self.tokens)-1 or self.position < 0:
             raise ValueError("Inner Error: Invalid position for current tokens list.")
+        
+
+        if self.current.type == TokenType.EOF:
+            return self.current
 
         current_token = self.current
         self.position += 1
@@ -306,7 +342,7 @@ class Parser:
 def main():
     p = Parser(
         Lexer(
-            'print(10 * --5)'
+            ''
         ).scan_tokens()
     )
 

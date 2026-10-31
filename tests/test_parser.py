@@ -7,6 +7,7 @@ from parser import Parser
 from errors import TahaSyntaxError
 from ast_nodes import (
     Program,
+    SourceLocation,
     LetStatement,
     PrintStatement,
     NumberLiteral,
@@ -14,6 +15,7 @@ from ast_nodes import (
     BooleanLiteral,
     Identifier,
     BinaryExpression,
+    UnaryExpression,
     IfStatement,
     BlockStatement
 )
@@ -150,6 +152,12 @@ def test_print_binary_expression():
         TokenType.STAR,
         TokenType.SLASH,
         TokenType.PERCENT,
+        TokenType.EQUAL_EQUAL,
+        TokenType.BANG_EQUAL,
+        TokenType.LESS,
+        TokenType.LESS_EQUAL,
+        TokenType.GREATER,
+        TokenType.GREATER_EQUAL,
     ],
 )
 def test_all_binary_operators(operator):
@@ -159,6 +167,12 @@ def test_all_binary_operators(operator):
         TokenType.STAR: "*",
         TokenType.SLASH: "/",
         TokenType.PERCENT: "%",
+        TokenType.EQUAL_EQUAL: "==",
+        TokenType.BANG_EQUAL: "!=",
+        TokenType.LESS: "<",
+        TokenType.LESS_EQUAL: "<=",
+        TokenType.GREATER: ">",
+        TokenType.GREATER_EQUAL: ">=",
     }
 
     source = f"let result = 8 {symbols[operator]} 3"
@@ -182,6 +196,54 @@ def test_binary_expression_with_identifier():
 
 
 # -------------------------
+# Unary expressions
+# -------------------------
+
+@pytest.mark.parametrize(
+    ("source", "operator", "operand_type", "operand_value"),
+    [
+        ("-5", TokenType.MINUS, NumberLiteral, 5),
+        ("!True", TokenType.BANG, BooleanLiteral, True),
+    ],
+)
+def test_unary_expression(source, operator, operand_type, operand_value):
+    expression = parse_expression(source)
+
+    assert isinstance(expression, UnaryExpression)
+    assert expression.operator == operator
+    assert isinstance(expression.operand, operand_type)
+    assert expression.operand.value == operand_value
+
+
+def test_chained_unary_expressions():
+    expression = parse_expression("!-5")
+
+    assert isinstance(expression, UnaryExpression)
+    assert expression.operator == TokenType.BANG
+    assert isinstance(expression.operand, UnaryExpression)
+    assert expression.operand.operator == TokenType.MINUS
+    assert isinstance(expression.operand.operand, NumberLiteral)
+    assert expression.operand.operand.value == 5
+
+
+def test_unary_expression_has_higher_precedence_than_binary():
+    expression = parse_expression("-2 * 3")
+
+    assert isinstance(expression, BinaryExpression)
+    assert expression.operator == TokenType.STAR
+    assert isinstance(expression.left, UnaryExpression)
+    assert expression.left.operator == TokenType.MINUS
+    assert expression.left.operand.value == 2
+    assert expression.right.value == 3
+
+
+@pytest.mark.parametrize("source", ["-", "!"])
+def test_unary_operator_without_operand_is_invalid(source):
+    with pytest.raises(TahaSyntaxError):
+        parse_expression(source)
+
+
+# -------------------------
 # Invalid syntax
 # -------------------------
 
@@ -193,7 +255,6 @@ def test_binary_expression_with_identifier():
         "let a =",
         "let a = + 3",
         "let a = 2 +",
-        "let a = -5",
         "print()",
         "print(2",
         "print 2)",
@@ -275,15 +336,34 @@ def test_addition_and_subtraction_have_same_precedence():
     assert expr.right.value == 2
 
 
-def test_invalid_binary_expression_raises_syntax_error():
-    from errors import TahaSyntaxError
+def test_comparison_has_lower_precedence_than_addition():
+    expr = parse_expression("2 + 3 < 8")
 
+    assert isinstance(expr, BinaryExpression)
+    assert expr.operator == TokenType.LESS
+    assert isinstance(expr.left, BinaryExpression)
+    assert expr.left.operator == TokenType.PLUS
+    assert expr.left.left.value == 2
+    assert expr.left.right.value == 3
+    assert expr.right.value == 8
+
+
+def test_comparison_operators_have_same_precedence_and_are_left_associative():
+    expr = parse_expression("1 < 2 == True")
+
+    assert isinstance(expr, BinaryExpression)
+    assert expr.operator == TokenType.EQUAL_EQUAL
+    assert isinstance(expr.left, BinaryExpression)
+    assert expr.left.operator == TokenType.LESS
+    assert expr.left.left.value == 1
+    assert expr.left.right.value == 2
+    assert isinstance(expr.right, BooleanLiteral)
+    assert expr.right.value is True
+
+
+def test_invalid_binary_expression_raises_syntax_error():
     with pytest.raises(TahaSyntaxError):
         parse_expression("2 + * 3")
-
-def parse_source(source):
-    tokens = Lexer(source).scan_tokens()
-    return Parser(tokens).parse()
 
 def test_empty_block():
     program = parse_source("""
@@ -344,6 +424,37 @@ if (True) {
     assert len(block.statements) == 1
     assert isinstance(block.statements[0], PrintStatement)
 
+
+def test_block_last_statement_can_be_immediately_followed_by_closing_brace():
+    program = parse_source("if (True) { print(1)}")
+
+    block = program.statements[0].then_branch
+    assert len(block.statements) == 1
+    assert isinstance(block.statements[0], PrintStatement)
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "if (True) { print(1) print(2) }",
+        "if (True) { let x = 1 let y = 2 }",
+    ],
+)
+def test_block_requires_newline_between_statements(source):
+    with pytest.raises(TahaSyntaxError):
+        parse_source(source)
+
+
+def test_block_allows_multiple_blank_lines_before_closing_brace():
+    program = parse_source("""if (True) {
+print(1)
+
+
+
+}""")
+
+    block = program.statements[0].then_branch
+    assert len(block.statements) == 1
 
 def test_missing_closing_brace():
     with pytest.raises(TahaSyntaxError):
@@ -490,4 +601,26 @@ if (True) {
     assert isinstance(outer, IfStatement)
     assert isinstance(inner, IfStatement)
     assert isinstance(inner.else_branch, BlockStatement)
- # 
+
+def test_number_literal_location():
+    program = parse_source("print(123)")
+
+    expression = program.statements[0].expression
+
+    assert expression.location == SourceLocation(1, 7)
+
+
+def test_binary_expression_location():
+    program = parse_source("print(10 + 20)")
+
+    expression = program.statements[0].expression
+
+    assert expression.location == SourceLocation(1, 7)
+
+
+def test_unary_expression_location():
+    program = parse_source("print(-10)")
+
+    expression = program.statements[0].expression
+
+    assert expression.location == SourceLocation(1, 7)
