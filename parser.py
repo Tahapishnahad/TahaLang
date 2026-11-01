@@ -2,7 +2,6 @@
 
 from tokens import Token, TokenType
 from errors import TahaSyntaxError
-from lexer import Lexer
 from ast_nodes import (
     Program,
     Statement,
@@ -27,17 +26,18 @@ UNARY_OPERATORS = {
 PRECEDENCE = {
     TokenType.EQUAL_EQUAL: 1,
     TokenType.BANG_EQUAL: 1,
-    TokenType.LESS: 1,
-    TokenType.LESS_EQUAL: 1,
-    TokenType.GREATER: 1,
-    TokenType.GREATER_EQUAL: 1,
 
-    TokenType.PLUS: 2,
-    TokenType.MINUS: 2,
+    TokenType.LESS: 2,
+    TokenType.LESS_EQUAL: 2,
+    TokenType.GREATER: 2,
+    TokenType.GREATER_EQUAL: 2,
 
-    TokenType.STAR: 3,
-    TokenType.SLASH: 3,
-    TokenType.PERCENT: 3,
+    TokenType.PLUS: 3,
+    TokenType.MINUS: 3,
+
+    TokenType.STAR: 4,
+    TokenType.SLASH: 4,
+    TokenType.PERCENT: 4,
 }
 
 
@@ -50,8 +50,8 @@ class Parser:
         statements = []
 
         while self.current.type != TokenType.EOF:
-            while self.current.type == TokenType.NEWLINE:
-                self.advance()
+            self.skip_newlines()
+                
 
             if self.current.type == TokenType.EOF:
                 break
@@ -60,7 +60,7 @@ class Parser:
                 self.parse_statement()
             )
 
-            if self.current.type not in [TokenType.EOF, TokenType.NEWLINE]:
+            if self.current.type not in (TokenType.EOF, TokenType.NEWLINE):
                 raise TahaSyntaxError.expected_eof_or_newline(
                     self.current.line,
                     self.current.column,
@@ -91,6 +91,7 @@ class Parser:
 
     
     def parse_let_statement(self):
+        location = SourceLocation(self.current.line, self.current.column)
         self.advance() # Use 'let'
 
         identifier = self.consume(
@@ -101,9 +102,10 @@ class Parser:
 
         value = self.parse_expression()
 
-        return LetStatement(name=identifier.value, value=value)
+        return LetStatement(name=identifier.value, value=value, location=location)
 
     def parse_print_statement(self):
+        location = SourceLocation(self.current.line, self.current.column)
         self.advance()
 
         self.consume(TokenType.LEFT_PAREN)
@@ -112,33 +114,45 @@ class Parser:
 
         self.consume(TokenType.RIGHT_PAREN)
 
-        return PrintStatement(expression)
+        return PrintStatement(expression, location=location)
 
     def parse_if_statement(self):
+        location = SourceLocation(self.current.line, self.current.column)
         self.advance()
 
         self.consume(TokenType.LEFT_PAREN)
-
         condition = self.parse_expression()
-
         self.consume(TokenType.RIGHT_PAREN)
 
         then_block = self.parse_block_statement()
 
-        if self.current.type == TokenType.ELSE: # Can not use after NEWLINE(s), just after '}' for IF block.
+        if self.current.type == TokenType.ELSE:
             self.advance()
             else_block = self.parse_block_statement()
-            return IfStatement(condition, then_block, else_block)
 
-        return IfStatement(condition, then_block)
+            return IfStatement(
+                condition=condition,
+                then_branch=then_block,
+                location=location,
+                else_branch=else_block
+            )
+
+        return IfStatement(
+            condition=condition,
+            then_branch=then_block,
+            location=location
+        )
 
     def parse_block_statement(self):
+        location = self.get_location(self.current)
         self.consume(TokenType.LEFT_BRACE)
 
         statements = []
 
-        while self.current.type != TokenType.RIGHT_BRACE:
-            if self.current.type == TokenType.EOF:
+        while True:
+            self.skip_newlines()
+
+            if self.check(TokenType.EOF):
                 raise TahaSyntaxError.unexpected_token_type(
                     self.current.line,
                     self.current.column,
@@ -146,78 +160,50 @@ class Parser:
                     got=TokenType.EOF
                 )
 
-            while self.current.type == TokenType.NEWLINE:
-                self.advance()
+            if self.check(TokenType.RIGHT_BRACE):
+                break
 
-            if self.current.type == TokenType.EOF:
-                raise TahaSyntaxError.unexpected_token_type(
-                    self.current.line,
-                    self.current.column,
-                    expected=TokenType.RIGHT_BRACE,
-                    got=TokenType.EOF
-                )
+            statements.append(self.parse_statement())
 
-            if self.current.type != TokenType.RIGHT_BRACE:
-                statements.append(self.parse_statement())
-                if self.check(TokenType.RIGHT_BRACE):
-                    break
-                else:
-                    self.consume(TokenType.NEWLINE)
-            
+            if not self.check(TokenType.RIGHT_BRACE):
+                self.consume(TokenType.NEWLINE)
 
         self.consume(TokenType.RIGHT_BRACE)
 
-        return BlockStatement(statements)
+        return BlockStatement(
+            statements=statements,
+            location=location
+        )
 
     def parse_expression(self):
         return self.parse_binary_expression(1)
 
 
     def parse_primary(self):
-        current_token = self.current
-        current_token_source_locator = SourceLocation(line=current_token.line, column=current_token.column)
+        token = self.current
+        location = self.get_location(token)
 
-        match current_token.type:
+        match token.type:
             case TokenType.INTEGER:
-                self.advance()
-                return NumberLiteral(
-                    int(current_token.value),
-                    current_token_source_locator
-                )
+                return self._parse_literal(token, int(token.value), NumberLiteral)
 
             case TokenType.FLOAT:
-                self.advance()
-                return NumberLiteral(
-                    float(current_token.value),
-                    current_token_source_locator
-                )
+                return self._parse_literal(token, float(token.value), NumberLiteral)
 
             case TokenType.STRING:
-                self.advance()
-                return StringLiteral(
-                    current_token.value,
-                    current_token_source_locator
-                )
+                return self._parse_literal(token, token.value, StringLiteral)
 
             case TokenType.TRUE:
-                self.advance()
-                return BooleanLiteral(
-                    True,
-                    current_token_source_locator
-                )
+                return self._parse_literal(token, True, BooleanLiteral)
 
             case TokenType.FALSE:
-                self.advance()
-                return BooleanLiteral(
-                    False,
-                    current_token_source_locator
-                )
-
+                return self._parse_literal(token, False, BooleanLiteral)
+            
             case TokenType.IDENTIFIER:
                 self.advance()
                 return Identifier(
-                    current_token.value,
-                    current_token_source_locator
+                    token.value,
+                    location
                 )
 
             case TokenType.LEFT_PAREN:
@@ -228,10 +214,17 @@ class Parser:
 
             case _:
                 raise TahaSyntaxError.invalid_expression(
-                    current_token_source_locator.line,
-                    current_token_source_locator.column
+                    location.line,
+                    location.column
                 )
 
+    def _parse_literal(self, token, value, literal_class):
+        self.advance()
+
+        return literal_class(
+            value,
+            self.get_location(token)
+        )
 
     def parse_binary_expression(self, min_precedence: int):
         left = self.parse_unary()
@@ -247,29 +240,30 @@ class Parser:
             if precedence < min_precedence:
                 break
 
-            op = self.advance()
+            operator_token = self.advance()
             right = self.parse_binary_expression(precedence + 1)
 
             left = BinaryExpression(
                 left=left, 
-                operator=op.type, 
+                operator=operator_token.type, 
                 right=right,
-                location=SourceLocation(line=left.location.line, column=left.location.column)
+                location=left.location
             )
 
         return left
 
     def parse_unary(self):
-        left = self.current
+        current_token = self.current
+        location = self.get_location(current_token)
 
-        if left.type in UNARY_OPERATORS:
+        if current_token.type in UNARY_OPERATORS:
             self.advance()
             operand = self.parse_unary()
 
             return UnaryExpression(
                 operand=operand,
-                operator=left.type,
-                location=SourceLocation(line=left.line, column=left.column)
+                operator=current_token.type,
+                location=location
             )
 
         return self.parse_primary()
@@ -285,27 +279,34 @@ class Parser:
     @tokens.setter
     def tokens(self, tokens):
 
-        types = []    
-
+        validate_eof_count = sum(
+            token.type == TokenType.EOF
+            for token in tokens
+        ) == 1
+        
         if len(tokens) == 0:
             raise ValueError("Inner Error: Empty tokens is invalid. checkout lexer.py")
 
-        for token in tokens:
-            if not isinstance(token, Token):
-                raise ValueError("Inner Error: 'tokens' memebers must be Token.")
-            
-            types.append(token.type)
-        
-        if (not TokenType.EOF in types) or (types.count(TokenType.EOF) > 1) or types[-1] != TokenType.EOF:
-            raise ValueError("Inner Error: EOF need to check. checkout lexer.py")
+        validate_types = all(
+            isinstance(token, Token)
+            for token in tokens
+        )
 
-        self._tokens = tokens
+        if not validate_types:
+            raise ValueError("Inner Error: 'tokens' members must be Token.")
+
+
+        validate_eof_position = tokens[-1].type == TokenType.EOF
+
+        if not validate_eof_count or not validate_eof_position:
+            raise ValueError("Inner Error: EOF not found or It's at incorrect position. checkout lexer.py")
+
+        self._tokens = list(tokens)
 
     def advance(self) -> Token:
 
         if self.position > len(self.tokens)-1 or self.position < 0:
             raise ValueError("Inner Error: Invalid position for current tokens list.")
-        
 
         if self.current.type == TokenType.EOF:
             return self.current
@@ -317,13 +318,6 @@ class Parser:
 
     def check(self, token_type:TokenType) -> bool:
         return self.current.type == token_type
-
-    def match(self, token_types:list):
-        if self.current.type in token_types:
-            self.advance()
-            return True
-
-        return False
 
     def consume(self, token_type:TokenType):
         current_token = self.current
@@ -339,15 +333,12 @@ class Parser:
         self.advance()
         return current_token
 
-def main():
-    p = Parser(
-        Lexer(
-            ''
-        ).scan_tokens()
-    )
+    def get_location(self, token: Token) -> SourceLocation:
+        return SourceLocation(
+            line=token.line,
+            column=token.column
+        )
 
-    print(p.parse())
-
-
-if __name__ == "__main__":
-    main()
+    def skip_newlines(self):
+        while self.check(TokenType.NEWLINE):
+            self.advance()

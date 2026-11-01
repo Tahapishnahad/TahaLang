@@ -270,7 +270,12 @@ def test_invalid_syntax_raises_error(source):
 def parse_expression(source):
     tokens = Lexer(source).scan_tokens()
     parser = Parser(tokens)
-    return parser.parse_expression()
+
+    expression = parser.parse_expression()
+
+    parser.consume(TokenType.EOF)
+
+    return expression
 
 
 def test_multiplication_has_higher_precedence_than_addition():
@@ -347,8 +352,19 @@ def test_comparison_has_lower_precedence_than_addition():
     assert expr.left.right.value == 3
     assert expr.right.value == 8
 
+def test_nested_expression_precedence():
+    expr = parse_expression("1 + 2 < 5 == True")
 
-def test_comparison_operators_have_same_precedence_and_are_left_associative():
+    assert isinstance(expr, BinaryExpression)
+    assert expr.operator == TokenType.EQUAL_EQUAL
+    assert isinstance(expr.left, BinaryExpression)
+    assert expr.left.operator == TokenType.LESS
+    assert expr.left.left.operator == TokenType.PLUS
+    assert expr.left.right.value == 5
+    assert isinstance(expr.right, BooleanLiteral)
+    assert expr.right.value is True
+
+def test_equality_has_lower_precedence_than_relational_operators():
     expr = parse_expression("1 < 2 == True")
 
     assert isinstance(expr, BinaryExpression)
@@ -624,3 +640,365 @@ def test_unary_expression_location():
     expression = program.statements[0].expression
 
     assert expression.location == SourceLocation(1, 7)
+
+
+# =========================
+# Additional precedence tests
+# =========================
+
+def test_equality_has_lower_precedence_than_relational():
+    expr = parse_expression("1 == 2 < 3")
+
+    assert isinstance(expr, BinaryExpression)
+    assert expr.operator == TokenType.EQUAL_EQUAL
+
+    assert isinstance(expr.left, NumberLiteral)
+    assert expr.left.value == 1
+
+    assert isinstance(expr.right, BinaryExpression)
+    assert expr.right.operator == TokenType.LESS
+    assert expr.right.left.value == 2
+    assert expr.right.right.value == 3
+
+
+def test_relational_operators_are_left_associative():
+    expr = parse_expression("1 < 2 > 3")
+
+    assert expr.operator == TokenType.GREATER
+    assert isinstance(expr.left, BinaryExpression)
+    assert expr.left.operator == TokenType.LESS
+
+    assert expr.left.left.value == 1
+    assert expr.left.right.value == 2
+    assert expr.right.value == 3
+
+
+def test_equality_operators_are_left_associative():
+    expr = parse_expression("1 == 2 != 3")
+
+    assert expr.operator == TokenType.BANG_EQUAL
+    assert isinstance(expr.left, BinaryExpression)
+    assert expr.left.operator == TokenType.EQUAL_EQUAL
+
+    assert expr.left.left.value == 1
+    assert expr.left.right.value == 2
+    assert expr.right.value == 3
+
+
+def test_multiplication_operators_are_left_associative():
+    expr = parse_expression("2 * 3 / 4")
+
+    assert expr.operator == TokenType.SLASH
+    assert isinstance(expr.left, BinaryExpression)
+    assert expr.left.operator == TokenType.STAR
+
+    assert expr.left.left.value == 2
+    assert expr.left.right.value == 3
+    assert expr.right.value == 4
+
+
+# =========================
+# Parenthesized expressions
+# =========================
+
+def test_parentheses_override_precedence():
+    expr = parse_expression("(2 + 3) * 4")
+
+    assert expr.operator == TokenType.STAR
+    assert isinstance(expr.left, BinaryExpression)
+    assert expr.left.operator == TokenType.PLUS
+
+    assert expr.left.left.value == 2
+    assert expr.left.right.value == 3
+    assert expr.right.value == 4
+
+
+def test_nested_parentheses():
+    expr = parse_expression("((2 + 3) * (4 - 1))")
+
+    assert expr.operator == TokenType.STAR
+    assert expr.left.operator == TokenType.PLUS
+    assert expr.right.operator == TokenType.MINUS
+
+
+def test_unary_expression_with_parenthesized_operand():
+    expr = parse_expression("-(2 + 3)")
+
+    assert isinstance(expr, UnaryExpression)
+    assert expr.operator == TokenType.MINUS
+    assert isinstance(expr.operand, BinaryExpression)
+    assert expr.operand.operator == TokenType.PLUS
+
+
+def test_unary_expression_inside_parentheses():
+    expr = parse_expression("(-2) * 3")
+
+    assert isinstance(expr, BinaryExpression)
+    assert expr.operator == TokenType.STAR
+    assert isinstance(expr.left, UnaryExpression)
+    assert expr.left.operand.value == 2
+
+
+def test_multiple_unary_operators():
+    expr = parse_expression("---5")
+
+    assert isinstance(expr, UnaryExpression)
+    assert expr.operator == TokenType.MINUS
+
+    assert isinstance(expr.operand, UnaryExpression)
+    assert expr.operand.operator == TokenType.MINUS
+
+    assert isinstance(expr.operand.operand, UnaryExpression)
+    assert expr.operand.operand.operator == TokenType.MINUS
+
+    assert expr.operand.operand.operand.value == 5
+
+
+# =========================
+# Expression edge cases
+# =========================
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "()",
+        "(1 + 2",
+        "1 + 2)",
+        "((1 + 2)",
+        "1 + (2 * 3",
+        "1 + ()",
+        "1 ** 2",
+    ],
+)
+def test_invalid_parenthesized_expressions(source):
+    with pytest.raises(TahaSyntaxError):
+        parse_expression(source)
+
+
+# =========================
+# Program statement boundaries
+# =========================
+
+def test_multiple_statements_with_blank_lines():
+    program = parse_source(
+        "let a = 1\n\n\nlet b = 2\n\nprint(a + b)"
+    )
+
+    assert len(program.statements) == 3
+
+
+def test_trailing_newlines_are_allowed():
+    program = parse_source("let a = 1\n\n\n")
+
+    assert len(program.statements) == 1
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "print(1) print(2)",
+        "let a = 1 let b = 2",
+        "print(1) let a = 2",
+        "}",
+        "else {}",
+    ],
+)
+def test_invalid_top_level_statement_boundaries(source):
+    with pytest.raises(TahaSyntaxError):
+        parse_source(source)
+
+
+# =========================
+# Block edge cases
+# =========================
+
+def test_empty_block_on_single_line():
+    program = parse_source("if (True) {}")
+
+    block = program.statements[0].then_branch
+
+    assert isinstance(block, BlockStatement)
+    assert block.statements == []
+
+
+def test_block_with_trailing_newlines():
+    program = parse_source("""
+if (True) {
+    print(1)
+
+
+}
+""")
+
+    block = program.statements[0].then_branch
+
+    assert len(block.statements) == 1
+
+
+def test_nested_blocks():
+    program = parse_source("""
+if (True) {
+    if (False) {
+        print(1)
+    }
+}
+""")
+
+    outer = program.statements[0]
+    inner = outer.then_branch.statements[0]
+
+    assert isinstance(outer.then_branch, BlockStatement)
+    assert isinstance(inner.then_branch, BlockStatement)
+
+
+# =========================
+# If / Else edge cases
+# =========================
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "if () {}",
+        "if (True) {",
+        "if (True) {} else",
+        "if (True) {} else print(1)",
+        "if (True) {} else {} else {}",
+        "if (True) {}\nelse {}",
+    ],
+)
+def test_invalid_if_else_syntax(source):
+    with pytest.raises(TahaSyntaxError):
+        parse_source(source)
+
+
+def test_else_belongs_to_nearest_if():
+    program = parse_source("""
+if (True) {
+    if (False) {
+        print(1)
+    } else {
+        print(2)
+    }
+} else {
+    print(3)
+}
+""")
+
+    outer = program.statements[0]
+    inner = outer.then_branch.statements[0]
+
+    assert isinstance(outer, IfStatement)
+    assert isinstance(inner, IfStatement)
+
+    assert inner.else_branch is not None
+    assert outer.else_branch is not None
+
+
+# =========================
+# Source location edge cases
+# =========================
+
+def test_string_literal_location():
+    program = parse_source('print("hello")')
+
+    expression = program.statements[0].expression
+
+    assert expression.location == SourceLocation(1, 7)
+
+
+def test_boolean_literal_location():
+    program = parse_source("print(True)")
+
+    expression = program.statements[0].expression
+
+    assert expression.location == SourceLocation(1, 7)
+
+
+def test_identifier_location():
+    program = parse_source("print(value)")
+
+    expression = program.statements[0].expression
+
+    assert expression.location == SourceLocation(1, 7)
+
+
+def test_nested_unary_location():
+    program = parse_source("print(!-5)")
+
+    expression = program.statements[0].expression
+
+    assert expression.location == SourceLocation(1, 7)
+    assert expression.operand.location == SourceLocation(1, 8)
+
+
+def test_binary_expression_with_unary_left_location():
+    program = parse_source("print(-1 * 2)")
+
+    expression = program.statements[0].expression
+
+    assert expression.location == SourceLocation(1, 7)
+    assert expression.left.location == SourceLocation(1, 7)
+
+# =========================
+# Statement source locations
+# =========================
+
+def test_let_statement_location():
+    program = parse_source("let value = 10")
+
+    statement = program.statements[0]
+
+    assert isinstance(statement, LetStatement)
+    assert statement.location == SourceLocation(1, 1)
+
+
+def test_print_statement_location():
+    program = parse_source("print(10)")
+
+    statement = program.statements[0]
+
+    assert isinstance(statement, PrintStatement)
+    assert statement.location == SourceLocation(1, 1)
+
+
+def test_if_statement_location():
+    program = parse_source("if (True) {}")
+
+    statement = program.statements[0]
+
+    assert isinstance(statement, IfStatement)
+    assert statement.location == SourceLocation(1, 1)
+
+
+def test_block_statement_location():
+    program = parse_source("if (True) {}")
+
+    block = program.statements[0].then_branch
+
+    assert isinstance(block, BlockStatement)
+    assert block.location == SourceLocation(1, 11)
+
+
+def test_else_block_statement_location():
+    program = parse_source("if (True) {} else {}")
+
+    statement = program.statements[0]
+
+    assert statement.then_branch.location == SourceLocation(1, 11)
+    assert statement.else_branch.location == SourceLocation(1, 19)
+
+
+def test_nested_statement_locations():
+    program = parse_source(
+        "if (True) {\n"
+        "    print(1)\n"
+        "}"
+    )
+
+    if_statement = program.statements[0]
+    block = if_statement.then_branch
+    print_statement = block.statements[0]
+
+    assert if_statement.location == SourceLocation(1, 1)
+    assert block.location == SourceLocation(1, 11)
+    assert print_statement.location == SourceLocation(2, 5)
