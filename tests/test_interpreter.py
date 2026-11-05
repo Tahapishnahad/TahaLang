@@ -1,9 +1,12 @@
 # test_interpreter.py
 
-from interpreter import Environment
+import pytest
+from types import SimpleNamespace
+
+from interpreter import Interpreter, Environment
 from errors import TahaRuntimeError
 from ast_nodes import *
-import pytest
+from tokens import TokenType
 
 # --------- Test Environment -----------
 def test_define():
@@ -178,20 +181,6 @@ def test_exists_with_parent():
     assert not env.exists("undefined")
 
 
-import pytest
-from types import SimpleNamespace
-
-from interpreter import Interpreter
-from ast_nodes import (
-    NumberLiteral,
-    StringLiteral,
-    BooleanLiteral,
-    BinaryExpression,
-    UnaryExpression,
-)
-from tokens import TokenType
-from errors import TahaRuntimeError
-
 
 # -------------------------
 # Helpers
@@ -254,8 +243,12 @@ def unary(operator, operand):
 
 
 @pytest.fixture
-def interpreter():
-    return Interpreter.__new__(Interpreter)
+def env():
+    return Environment()
+
+@pytest.fixture
+def interpreter(env):
+    return Interpreter(env)
 
 
 # -------------------------
@@ -272,8 +265,8 @@ def interpreter():
         (boolean(False), False),
     ]
 )
-def test_literal_evaluation(interpreter, expr, expected):
-    assert interpreter.execute_expression(expr) == expected
+def test_literal_evaluation(interpreter, expr, expected, env):
+    assert interpreter.execute_expression(expr, env) == expected
 
 
 # -------------------------
@@ -288,17 +281,17 @@ def test_literal_evaluation(interpreter, expr, expected):
         (string("Hello "), string("World"), "Hello World"),
     ]
 )
-def test_plus(interpreter, left, right, expected):
+def test_plus(interpreter, left, right, expected, env):
     expr = binary(left, TokenType.PLUS, right)
 
-    assert interpreter.execute_expression(expr) == expected
+    assert interpreter.execute_expression(expr, env) == expected
 
 
-def test_plus_invalid_types(interpreter):
+def test_plus_invalid_types(interpreter, env):
     expr = binary(number(5), TokenType.PLUS, string("5"))
 
     with pytest.raises(TahaRuntimeError):
-        interpreter.execute_expression(expr)
+        interpreter.execute_expression(expr, env)
 
 
 # -------------------------
@@ -313,17 +306,17 @@ def test_plus_invalid_types(interpreter):
         (number(-5), number(3), -8),
     ]
 )
-def test_minus(interpreter, left, right, expected):
+def test_minus(interpreter, left, right, expected, env):
     expr = binary(left, TokenType.MINUS, right)
 
-    assert interpreter.execute_expression(expr) == expected
+    assert interpreter.execute_expression(expr, env) == expected
 
 
-def test_minus_invalid_types(interpreter):
+def test_minus_invalid_types(interpreter, env):
     expr = binary(string("10"), TokenType.MINUS, number(5))
 
     with pytest.raises(TahaRuntimeError):
-        interpreter.execute_expression(expr)
+        interpreter.execute_expression(expr, env)
 
 
 # -------------------------
@@ -338,17 +331,17 @@ def test_minus_invalid_types(interpreter):
         (number(-4), number(3), -12),
     ]
 )
-def test_star(interpreter, left, right, expected):
+def test_star(interpreter, left, right, expected, env):
     expr = binary(left, TokenType.STAR, right)
 
-    assert interpreter.execute_expression(expr) == expected
+    assert interpreter.execute_expression(expr, env) == expected
 
 
-def test_star_invalid_types(interpreter):
+def test_star_invalid_types(interpreter, env):
     expr = binary(boolean(True), TokenType.STAR, number(5))
 
     with pytest.raises(TahaRuntimeError):
-        interpreter.execute_expression(expr)
+        interpreter.execute_expression(expr, env)
 
 
 # -------------------------
@@ -363,24 +356,24 @@ def test_star_invalid_types(interpreter):
         (number(-10), number(2), -5.0),
     ]
 )
-def test_slash(interpreter, left, right, expected):
+def test_slash(interpreter, left, right, expected, env):
     expr = binary(left, TokenType.SLASH, right)
 
-    assert interpreter.execute_expression(expr) == expected
+    assert interpreter.execute_expression(expr, env) == expected
 
 
-def test_slash_by_zero(interpreter):
+def test_slash_by_zero(interpreter, env):
     expr = binary(number(10), TokenType.SLASH, number(0))
 
     with pytest.raises(TahaRuntimeError):
-        interpreter.execute_expression(expr)
+        interpreter.execute_expression(expr, env)
 
 
-def test_slash_invalid_types(interpreter):
+def test_slash_invalid_types(interpreter, env):
     expr = binary(number(10), TokenType.SLASH, boolean(False))
 
     with pytest.raises(TahaRuntimeError):
-        interpreter.execute_expression(expr)
+        interpreter.execute_expression(expr, env)
 
 
 # -------------------------
@@ -396,24 +389,24 @@ def test_slash_invalid_types(interpreter):
         (number(-10), number(3), 2),
     ]
 )
-def test_percent(interpreter, left, right, expected):
+def test_percent(interpreter, left, right, expected, env):
     expr = binary(left, TokenType.PERCENT, right)
 
-    assert interpreter.execute_expression(expr) == expected
+    assert interpreter.execute_expression(expr, env) == expected
 
 
-def test_percent_by_zero(interpreter):
+def test_percent_by_zero(interpreter, env):
     expr = binary(number(10), TokenType.PERCENT, number(0))
 
     with pytest.raises(TahaRuntimeError):
-        interpreter.execute_expression(expr)
+        interpreter.execute_expression(expr, env)
 
 
-def test_percent_invalid_types(interpreter):
+def test_percent_invalid_types(interpreter, env):
     expr = binary(number(10), TokenType.PERCENT, string("3"))
 
     with pytest.raises(TahaRuntimeError):
-        interpreter.execute_expression(expr)
+        interpreter.execute_expression(expr, env)
 
 
 # -------------------------
@@ -434,10 +427,10 @@ def test_percent_invalid_types(interpreter):
         (string("Hello"), string("World"), False),
     ]
 )
-def test_equal_equal(interpreter, left, right, expected):
+def test_equal_equal(interpreter, left, right, expected, env):
     expr = binary(left, TokenType.EQUAL_EQUAL, right)
 
-    assert interpreter.execute_expression(expr) is expected
+    assert interpreter.execute_expression(expr, env) is expected
 
 
 @pytest.mark.parametrize(
@@ -450,10 +443,10 @@ def test_equal_equal(interpreter, left, right, expected):
         (string("Hello"), string("World"), True),
     ]
 )
-def test_bang_equal(interpreter, left, right, expected):
+def test_bang_equal(interpreter, left, right, expected, env):
     expr = binary(left, TokenType.BANG_EQUAL, right)
 
-    assert interpreter.execute_expression(expr) is expected
+    assert interpreter.execute_expression(expr, env) is expected
 
 
 # -------------------------
@@ -481,10 +474,10 @@ def test_bang_equal(interpreter, left, right, expected):
 )
 def test_relational_operators(
     interpreter, operator, left, right, expected
-):
+, env):
     expr = binary(left, operator, right)
 
-    assert interpreter.execute_expression(expr) is expected
+    assert interpreter.execute_expression(expr, env) is expected
 
 
 @pytest.mark.parametrize(
@@ -496,11 +489,11 @@ def test_relational_operators(
         TokenType.GREATER_EQUAL,
     ]
 )
-def test_relational_operators_invalid_types(interpreter, operator):
+def test_relational_operators_invalid_types(interpreter, operator, env):
     expr = binary(number(5), operator, string("5"))
 
     with pytest.raises(TahaRuntimeError):
-        interpreter.execute_expression(expr)
+        interpreter.execute_expression(expr, env)
 
 
 # -------------------------
@@ -515,17 +508,17 @@ def test_relational_operators_invalid_types(interpreter, operator):
         (number(2.5), -2.5),
     ]
 )
-def test_unary_minus(interpreter, operand, expected):
+def test_unary_minus(interpreter, operand, expected, env):
     expr = unary(TokenType.MINUS, operand)
 
-    assert interpreter.execute_expression(expr) == expected
+    assert interpreter.execute_expression(expr, env) == expected
 
 
-def test_unary_minus_invalid_type(interpreter):
+def test_unary_minus_invalid_type(interpreter, env):
     expr = unary(TokenType.MINUS, string("Hello"))
 
     with pytest.raises(TahaRuntimeError):
-        interpreter.execute_expression(expr)
+        interpreter.execute_expression(expr, env)
 
 
 @pytest.mark.parametrize(
@@ -535,14 +528,265 @@ def test_unary_minus_invalid_type(interpreter):
         (boolean(False), True),
     ]
 )
-def test_unary_bang(interpreter, operand, expected):
+def test_unary_bang(interpreter, operand, expected, env):
     expr = unary(TokenType.BANG, operand)
 
-    assert interpreter.execute_expression(expr) is expected
+    assert interpreter.execute_expression(expr, env) is expected
 
 
-def test_unary_bang_invalid_type(interpreter):
+def test_unary_bang_invalid_type(interpreter, env):
     expr = unary(TokenType.BANG, number(5))
 
     with pytest.raises(TahaRuntimeError):
-        interpreter.execute_expression(expr)
+        interpreter.execute_expression(expr, env)
+
+
+LOC = SourceLocation(line=1, column=1)
+
+
+# -------------------------
+# LetStatement
+# -------------------------
+
+def test_let_statement_defines_variable(interpreter, env):
+    statement = LetStatement(
+        name="x",
+        value=NumberLiteral(10, LOC),
+        location=LOC
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert env.get("x", LOC) == 10
+
+
+def test_let_statement_evaluates_expression(interpreter, env):
+    statement = LetStatement(
+        name="x",
+        value=BinaryExpression(
+            left=NumberLiteral(5, LOC),
+            operator=TokenType.PLUS,
+            right=NumberLiteral(3, LOC),
+            location=LOC
+        ),
+        location=LOC
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert env.get("x", LOC) == 8
+
+
+def test_let_statement_can_use_existing_variable(interpreter, env):
+    env.define("x", 10, LOC)
+
+    statement = LetStatement(
+        name="y",
+        value=Identifier("x", LOC),
+        location=LOC
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert env.get("y", LOC) == 10
+
+
+# -------------------------
+# PrintStatement
+# -------------------------
+
+def test_print_statement(capsys, interpreter, env):
+    statement = PrintStatement(
+        expression=NumberLiteral(42, LOC),
+        location=LOC
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert capsys.readouterr().out == "42\n"
+
+
+def test_print_statement_prints_identifier(capsys, interpreter, env):
+    env.define("x", 25, LOC)
+
+    statement = PrintStatement(
+        expression=Identifier("x", LOC),
+        location=LOC
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert capsys.readouterr().out == "25\n"
+
+
+# -------------------------
+# BlockStatement
+# -------------------------
+
+def test_block_statement_executes_all_statements(capsys, interpreter, env):
+    block = BlockStatement(
+        statements=[
+            PrintStatement(NumberLiteral(10, LOC), LOC),
+            PrintStatement(NumberLiteral(20, LOC), LOC),
+        ],
+        location=LOC
+    )
+
+    interpreter.execute_statement(block, env)
+
+    assert capsys.readouterr().out == "10\n20\n"
+
+
+def test_block_can_access_parent_variables(capsys, interpreter, env):
+    env.define("x", 100, LOC)
+
+    block = BlockStatement(
+        statements=[
+            PrintStatement(Identifier("x", LOC), LOC)
+        ],
+        location=LOC
+    )
+
+    interpreter.execute_statement(block, env)
+
+    assert capsys.readouterr().out == "100\n"
+
+
+def test_block_variable_does_not_leak(interpreter, env):
+    block = BlockStatement(
+        statements=[
+            LetStatement(
+                "x",
+                NumberLiteral(10, LOC),
+                LOC
+            )
+        ],
+        location=LOC
+    )
+
+    interpreter.execute_statement(block, env)
+
+    with pytest.raises(TahaRuntimeError):
+        env.get("x", LOC)
+
+
+def test_block_can_shadow_parent_variable(capsys, interpreter, env):
+    env.define("x", 10, LOC)
+
+    block = BlockStatement(
+        statements=[
+            LetStatement("x", NumberLiteral(20, LOC), LOC),
+            PrintStatement(Identifier("x", LOC), LOC)
+        ],
+        location=LOC
+    )
+
+    interpreter.execute_statement(block, env)
+
+    assert capsys.readouterr().out == "20\n"
+    assert env.get("x", LOC) == 10
+
+
+# -------------------------
+# IfStatement
+# -------------------------
+
+def test_if_true_executes_then_branch(capsys, interpreter, env):
+    statement = IfStatement(
+        condition=BooleanLiteral(True, LOC),
+        then_branch=BlockStatement(
+            [PrintStatement(NumberLiteral(1, LOC), LOC)],
+            LOC
+        ),
+        location=LOC
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert capsys.readouterr().out == "1\n"
+
+
+def test_if_false_executes_else_branch(capsys, interpreter, env):
+    statement = IfStatement(
+        condition=BooleanLiteral(False, LOC),
+        then_branch=BlockStatement(
+            [PrintStatement(NumberLiteral(1, LOC), LOC)],
+            LOC
+        ),
+        location=LOC,
+        else_branch=BlockStatement(
+            [PrintStatement(NumberLiteral(2, LOC), LOC)],
+            LOC
+        )
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert capsys.readouterr().out == "2\n"
+
+
+def test_if_false_without_else_does_nothing(capsys, interpreter, env):
+    statement = IfStatement(
+        condition=BooleanLiteral(False, LOC),
+        then_branch=BlockStatement(
+            [PrintStatement(NumberLiteral(1, LOC), LOC)],
+            LOC
+        ),
+        location=LOC
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert capsys.readouterr().out == ""
+
+
+def test_if_rejects_non_boolean_condition(interpreter, env):
+    statement = IfStatement(
+        condition=NumberLiteral(10, LOC),
+        then_branch=BlockStatement([], LOC),
+        location=LOC
+    )
+
+    with pytest.raises(TahaRuntimeError):
+        interpreter.execute_statement(statement, env)
+
+
+def test_if_branch_has_independent_scope(interpreter, env):
+    statement = IfStatement(
+        condition=BooleanLiteral(True, LOC),
+        then_branch=BlockStatement(
+            [
+                LetStatement(
+                    "x",
+                    NumberLiteral(10, LOC),
+                    LOC
+                )
+            ],
+            LOC
+        ),
+        location=LOC
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    with pytest.raises(TahaRuntimeError):
+        env.get("x", LOC)
+
+
+def test_if_can_read_parent_variables(capsys, interpreter, env):
+    env.define("x", 50, LOC)
+
+    statement = IfStatement(
+        condition=BooleanLiteral(True, LOC),
+        then_branch=BlockStatement(
+            [
+                PrintStatement(Identifier("x", LOC), LOC)
+            ],
+            LOC
+        ),
+        location=LOC
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert capsys.readouterr().out == "50\n"

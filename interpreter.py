@@ -2,6 +2,8 @@
 
 from errors import TahaRuntimeError
 from ast_nodes import *
+from lexer import Lexer
+from parser import Parser
 
 class Environment:
     def __init__(self, parent=None):
@@ -56,17 +58,17 @@ class Interpreter:
     def __init__(self, env: Environment):
         self.env = env
 
-    def execute_expression(self, expr) -> object:
+    def execute_expression(self, expr: Expression, env: Environment) -> object:
 
         if isinstance(expr, NumberLiteral) or isinstance(expr, StringLiteral) or isinstance(expr, BooleanLiteral):
             return expr.value
         
         elif isinstance(expr, Identifier):
-            return self.env.get(expr.name, expr.location)
+            return env.get(expr.name, expr.location)
         
         elif isinstance(expr, BinaryExpression):
-            left_value = self.execute_expression(expr.left)
-            right_value = self.execute_expression(expr.right)
+            left_value = self.execute_expression(expr.left, env=env)
+            right_value = self.execute_expression(expr.right, env=env)
 
             match expr.operator:
                 case TokenType.PLUS:
@@ -179,7 +181,7 @@ class Interpreter:
                         )
 
         elif isinstance(expr, UnaryExpression):
-            operand = self.execute_expression(expr.operand)
+            operand = self.execute_expression(expr.operand, env=env)
 
             match expr.operator:
                 case TokenType.MINUS:
@@ -201,6 +203,75 @@ class Interpreter:
                         )
                     
                     return not operand
+
+    def execute_statement(self, statement: Statement, env: Environment):
+        if isinstance(statement, LetStatement):
+            self.execute_let_statement(
+                statement=statement,
+                env=env
+            )
+
+        elif isinstance(statement, PrintStatement):
+            self.execute_print_statement(
+                statement=statement,
+                env=env
+            )
+
+        elif isinstance(statement, IfStatement):
+            self.execute_if_statement(
+                statement=statement,
+                env=env
+            )
+
+        elif isinstance(statement, BlockStatement):
+            self.execute_block_statement(
+                statement=statement,
+                env=env
+            )
+
+    def execute_print_statement(self, statement: PrintStatement, env: Environment):
+        print_value = self.execute_expression(
+            statement.expression,
+            env=env
+        )
+
+        print(print_value)
+
+    def execute_let_statement(self, statement: LetStatement, env: Environment):
+        env.define(
+            name=statement.name,
+            value=self.execute_expression(expr=statement.value, env=env),
+            source_location=statement.location
+        )
+
+    def execute_block_statement(self, statement: BlockStatement, env:Environment):
+        child_env = Environment(parent=env)
+        inner_statements = statement.statements
+
+        for statement in inner_statements:
+            self.execute_statement(statement=statement, env=child_env)
+
+    def execute_if_statement(self, statement: IfStatement, env: Environment):
+        condition_value = self.execute_expression(expr=statement.condition, env=env)
+
+        if type(condition_value) is not bool:
+            raise TahaRuntimeError.type_error(
+                message="IF condition must evaluate to BOOLEAN.",
+                line=statement.condition.location.line,
+                column=statement.condition.location.column
+            )
+
+        if condition_value:
+            self.execute_block_statement(
+                statement=statement.then_branch,
+                env=env
+            )
+        else:
+            if statement.else_branch is not None:
+                self.execute_block_statement(
+                    statement=statement.else_branch,
+                    env=env
+                )
 
     def is_number(self, value: object) -> bool:
         return type(value) in (int, float)
