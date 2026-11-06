@@ -166,7 +166,7 @@ Declare variables using `let`:
 ```taha
 let age = 13
 let name = "Taha"
-let is_programmer = true
+let is_programmer = True
 
 print(name)
 print(age)
