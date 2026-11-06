@@ -2,8 +2,6 @@
 
 from errors import TahaRuntimeError
 from ast_nodes import *
-from lexer import Lexer
-from parser import Parser
 
 class Environment:
     def __init__(self, parent=None):
@@ -57,6 +55,10 @@ class Interpreter:
 
     def __init__(self, env: Environment):
         self.env = env
+
+    def execute_program(self, program: Program, env: Environment):
+        for statement in program.statements:
+            self.execute_statement(statement, env=env)
 
     def execute_expression(self, expr: Expression, env: Environment) -> object:
 

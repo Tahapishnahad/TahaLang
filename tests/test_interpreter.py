@@ -2,7 +2,6 @@
 
 import pytest
 from types import SimpleNamespace
-
 from interpreter import Interpreter, Environment
 from errors import TahaRuntimeError
 from ast_nodes import *
@@ -790,3 +789,80 @@ def test_if_can_read_parent_variables(capsys, interpreter, env):
     interpreter.execute_statement(statement, env)
 
     assert capsys.readouterr().out == "50\n"
+
+# -------------------------
+# Program Execution
+# -------------------------
+
+def test_execute_program_executes_all_statements(capsys, interpreter, env):
+    program = Program(
+        statements=[
+            PrintStatement(NumberLiteral(10, LOC), LOC),
+            PrintStatement(NumberLiteral(20, LOC), LOC),
+            PrintStatement(NumberLiteral(30, LOC), LOC),
+        ]
+    )
+
+    interpreter.execute_program(program, env)
+
+    assert capsys.readouterr().out == "10\n20\n30\n"
+
+
+def test_execute_program_preserves_statement_order(capsys, interpreter, env):
+    program = Program(
+        statements=[
+            LetStatement("x", NumberLiteral(10, LOC), LOC),
+            LetStatement(
+                "y",
+                BinaryExpression(
+                    Identifier("x", LOC),
+                    TokenType.PLUS,
+                    NumberLiteral(5, LOC),
+                    LOC
+                ),
+                LOC
+            ),
+            PrintStatement(Identifier("y", LOC), LOC),
+        ]
+    )
+
+    interpreter.execute_program(program, env)
+
+    assert capsys.readouterr().out == "15\n"
+
+
+def test_execute_program_uses_shared_environment(interpreter, env):
+    program = Program(
+        statements=[
+            LetStatement("x", NumberLiteral(100, LOC), LOC),
+            LetStatement("y", NumberLiteral(200, LOC), LOC),
+        ]
+    )
+
+    interpreter.execute_program(program, env)
+
+    assert env.get("x", LOC) == 100
+    assert env.get("y", LOC) == 200
+
+
+def test_execute_program_stops_after_runtime_error(capsys, interpreter, env):
+    program = Program(
+        statements=[
+            PrintStatement(NumberLiteral(10, LOC), LOC),
+            PrintStatement(Identifier("undefined", LOC), LOC),
+            PrintStatement(NumberLiteral(30, LOC), LOC),
+        ]
+    )
+
+    with pytest.raises(TahaRuntimeError):
+        interpreter.execute_program(program, env)
+
+    assert capsys.readouterr().out == "10\n"
+
+
+def test_execute_empty_program(interpreter, env):
+    program = Program(statements=[])
+
+    interpreter.execute_program(program, env)
+
+    assert env.variables == {}
