@@ -187,7 +187,7 @@ def test_scan_operators():
 
 
 def test_all_single_character_operators():
-    source = "+ - * / % ( ) { } = < > !"
+    source = "+ - * / % ( ) { } [ ] = < > ! ,"
     lexer = Lexer(source)
     tokens = lexer.scan_tokens()
 
@@ -201,10 +201,13 @@ def test_all_single_character_operators():
         (TokenType.RIGHT_PAREN, ")"),
         (TokenType.LEFT_BRACE, "{"),
         (TokenType.RIGHT_BRACE, "}"),
+        (TokenType.LEFT_SQBRACKET, "["),
+        (TokenType.RIGHT_SQBRACKET, "]"),
         (TokenType.EQUAL, "="),
         (TokenType.LESS, "<"),
         (TokenType.GREATER, ">"),
-        (TokenType.BANG, "!")
+        (TokenType.BANG, "!"),
+        (TokenType.COMMA, ",")
     ]
 
     actual = [(token.type, token.value) for token in tokens[:-1]]
@@ -456,3 +459,22 @@ def test_multiline_token_positions():
 
     assert print_token.line == 2
     assert print_token.column == 1
+
+def test_list_tokens():
+    source = "[10, 20, 30]"
+    lexer = Lexer(source)
+    tokens = lexer.scan_tokens()
+
+    expected = [
+        (TokenType.LEFT_SQBRACKET, "["),
+        (TokenType.INTEGER, "10"),
+        (TokenType.COMMA, ","),
+        (TokenType.INTEGER, "20"),
+        (TokenType.COMMA, ","),
+        (TokenType.INTEGER, "30"),
+        (TokenType.RIGHT_SQBRACKET, "]")
+    ]
+
+    actual = [(token.type, token.value) for token in tokens[:-1]]
+
+    assert actual == expected

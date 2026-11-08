@@ -39,6 +39,10 @@ class TokenType(Enum):
     RIGHT_PAREN = "RIGHT_PAREN" # )
     LEFT_BRACE = "LEFT_BRACE" # {
     RIGHT_BRACE = "RIGHT_BRACE" # }
+    LEFT_SQBRACKET = "LEFT_SQBRACKET" # [
+    RIGHT_SQBRACKET = "RIGHT_SQBRACKET" # ]
+
+    COMMA = "COMMA" # ,
 
 @dataclass
 class Token:

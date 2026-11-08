@@ -12,7 +12,10 @@ SINGLE_CHAR_TOKENS = {
     "(": TokenType.LEFT_PAREN,
     ")": TokenType.RIGHT_PAREN,
     "{": TokenType.LEFT_BRACE,
-    "}": TokenType.RIGHT_BRACE
+    "}": TokenType.RIGHT_BRACE,
+    "[": TokenType.LEFT_SQBRACKET,
+    "]": TokenType.RIGHT_SQBRACKET,
+    ",": TokenType.COMMA
 }
 
 COMPOUND_OPERATOR_STARTS = {"=", "<", ">", "!"}
