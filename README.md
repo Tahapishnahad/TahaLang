@@ -120,7 +120,7 @@ TahaLang/
 Clone the repository:
 
 ```bash
-git clone [https://github.com/Tahapishnahad/TahaLang](https://github.com/Tahapishnahad/TahaLang.git)
+git clone https://github.com/Tahapishnahad/TahaLang.git
 ```
 
 Navigate to the project directory:
@@ -166,7 +166,7 @@ Declare variables using `let`:
 ```taha
 let age = 13
 let name = "Taha"
-let is_programmer = true
+let is_programmer = True
 
 print(name)
 print(age)
