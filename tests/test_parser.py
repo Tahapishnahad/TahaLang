@@ -17,7 +17,8 @@ from ast_nodes import (
     BinaryExpression,
     UnaryExpression,
     IfStatement,
-    BlockStatement
+    BlockStatement,
+    ListExpression
 )
 from tokens import TokenType
 
@@ -1002,3 +1003,100 @@ def test_nested_statement_locations():
     assert if_statement.location == SourceLocation(1, 1)
     assert block.location == SourceLocation(1, 11)
     assert print_statement.location == SourceLocation(2, 5)
+
+def test_list_expression():
+    lexer = Lexer("[10, 20, 30]")
+    parser = Parser(tokens=lexer.scan_tokens())
+
+    list_expr = parser.parse_expression()
+
+    assert len(list_expr.elements) == 3
+    assert list_expr.location.line == 1
+    assert list_expr.location.column == 1
+    assert list_expr.elements[0].value == 10
+    assert list_expr.elements[1].value == 20
+    assert list_expr.elements[2].value == 30
+    assert isinstance(list_expr.elements[0], NumberLiteral)
+    assert isinstance(list_expr.elements[1], NumberLiteral)
+    assert isinstance(list_expr.elements[2], NumberLiteral)
+    assert list_expr.elements[0].location.line == 1
+    assert list_expr.elements[0].location.column == 2
+    assert list_expr.elements[1].location.line == 1
+    assert list_expr.elements[1].location.column == 6
+    assert list_expr.elements[2].location.line == 1
+    assert list_expr.elements[2].location.column == 10
+
+def test_empty_list_expression():
+    lexer = Lexer("[]")
+    parser = Parser(tokens=lexer.scan_tokens())
+
+    result = parser.parse_expression()
+
+    assert isinstance(result, ListExpression)
+    assert result.elements == []
+    assert result.location.line == 1
+    assert result.location.column == 1
+
+def test_single_element_list_expression():
+    lexer = Lexer("[42]")
+    parser = Parser(tokens=lexer.scan_tokens())
+
+    result = parser.parse_expression()
+
+    assert isinstance(result, ListExpression)
+    assert len(result.elements) == 1
+    assert isinstance(result.elements[0], NumberLiteral)
+    assert result.elements[0].value == 42
+
+def test_list_expression_with_binary_expressions():
+    lexer = Lexer("[10 + 5, 20 * 2]")
+    parser = Parser(tokens=lexer.scan_tokens())
+
+    result = parser.parse_expression()
+
+    assert isinstance(result, ListExpression)
+    assert len(result.elements) == 2
+
+    first = result.elements[0]
+    second = result.elements[1]
+
+    assert isinstance(first, BinaryExpression)
+    assert first.left.value == 10
+    assert first.right.value == 5
+    assert first.operator == TokenType.PLUS
+
+    assert isinstance(second, BinaryExpression)
+    assert second.left.value == 20
+    assert second.right.value == 2
+    assert second.operator == TokenType.STAR
+
+def test_heterogeneous_list_expression():
+    lexer = Lexer('[19, "Taha", True]')
+    parser = Parser(tokens=lexer.scan_tokens())
+
+    result = parser.parse_expression()
+
+    assert isinstance(result, ListExpression)
+    assert len(result.elements) == 3
+
+    assert isinstance(result.elements[0], NumberLiteral)
+    assert isinstance(result.elements[1], StringLiteral)
+    assert isinstance(result.elements[2], BooleanLiteral)
+
+    assert result.elements[0].value == 19
+    assert result.elements[1].value == "Taha"
+    assert result.elements[2].value is True
+
+@pytest.mark.parametrize("source", [
+    "[10,]",
+    "[10,,20]",
+    "[,10]",
+    "[10 20]",
+    "[10, 20",
+])
+def test_invalid_list_expression(source):
+    lexer = Lexer(source)
+    parser = Parser(tokens=lexer.scan_tokens())
+
+    with pytest.raises(TahaSyntaxError):
+        parser.parse_expression()

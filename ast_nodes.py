@@ -62,6 +62,11 @@ class Identifier(Expression):
     location: SourceLocation
 
 @dataclass
+class ListExpression(Expression):
+    elements: list[Expression]
+    location: SourceLocation
+
+@dataclass
 class BinaryExpression(Expression):
     left: Expression
     operator: TokenType

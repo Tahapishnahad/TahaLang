@@ -1,6 +1,7 @@
 #parser.py
 
 from tokens import Token, TokenType
+from lexer import Lexer
 from errors import TahaSyntaxError
 from ast_nodes import (
     Program,
@@ -16,6 +17,7 @@ from ast_nodes import (
     Identifier,
     BinaryExpression,
     UnaryExpression,
+    ListExpression
 )
 
 UNARY_OPERATORS = {
@@ -198,6 +200,9 @@ class Parser:
 
             case TokenType.FALSE:
                 return self._parse_literal(token, False, BooleanLiteral)
+
+            case TokenType.LEFT_SQBRACKET:
+                return self.parse_list_expression()
             
             case TokenType.IDENTIFIER:
                 self.advance()
@@ -267,7 +272,50 @@ class Parser:
             )
 
         return self.parse_primary()
-    
+
+    def parse_list_expression(self):
+        location = SourceLocation(self.current.line, self.current.column)
+        self.consume(TokenType.LEFT_SQBRACKET)
+        list_elements = []
+
+        waiting_for_element = True
+
+        while self.current.type != TokenType.RIGHT_SQBRACKET:
+            if self.current.type == TokenType.COMMA:
+                if not list_elements:
+                    raise TahaSyntaxError.unexpected_comma_in_list_expression(
+                        line=self.current.line,
+                        column=self.current.column
+                    )
+
+                else:
+                    waiting_for_element = True
+                    self.advance()
+
+                    if self.current.type == TokenType.COMMA:
+                        raise TahaSyntaxError.unexpected_comma_in_list_expression(
+                            line=self.current.line,
+                            column=self.current.column
+                        )
+
+            if waiting_for_element:
+                
+                list_elements.append(self.parse_expression())
+                waiting_for_element = False
+
+            if self.current.type not in (TokenType.COMMA, TokenType.RIGHT_SQBRACKET):
+                raise TahaSyntaxError.unexpected_token_type(
+                    line=self.current.line,
+                    column=self.current.column,
+                    expected="COMMA, RIGHT_SQBRACKET",
+                    got=self.current.type
+                )
+
+
+        self.consume(TokenType.RIGHT_SQBRACKET)
+
+        return ListExpression(elements=list_elements, location=location)
+            
     @property
     def current(self) -> Token:
         return self.tokens[self.position]
@@ -342,3 +390,11 @@ class Parser:
     def skip_newlines(self):
         while self.check(TokenType.NEWLINE):
             self.advance()
+
+def main():
+    l = Lexer('')
+    p = Parser(tokens=l.scan_tokens())
+    print(p.parse_list_expression())
+
+if __name__ == "__main__":
+    main()

@@ -61,7 +61,6 @@ class TahaSyntaxError(TahaLangError):
     def unexpected_eof(cls, line, column, expected):
         return cls(f"Unexpected EOF, expected: {expected}", line, column)
 
-
     @classmethod
     def invalid_expression(cls, line, column):
         return cls("Invalid expression.", line, column)
@@ -69,6 +68,14 @@ class TahaSyntaxError(TahaLangError):
     @classmethod
     def expected_eof_or_newline(cls, line, column, got):
         return cls(f"Expected EOF or NEWLINE, got: {got}", line, column)
+
+    @classmethod
+    def unexpected_comma_in_list_expression(cls, line, column):
+        return cls("Unexpected COMMA in list expression", line, column)
+
+    @classmethod
+    def expected_expression_after_comma(cls, line, column, got):
+        return cls(f"Expected Expression after COMMA. got: {got}", line, column)
 
 
 class TahaRuntimeError(TahaLangError):

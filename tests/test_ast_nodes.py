@@ -14,6 +14,7 @@ from ast_nodes import (
     Identifier,
     BinaryExpression,
     UnaryExpression,
+    ListExpression
 )
 
 
@@ -265,3 +266,61 @@ def test_source_location_in_expression():
     )
 
     assert expression.location == SourceLocation(3, 4)
+
+def test_list_expression():
+    temp_location = SourceLocation(1, 1)
+
+    list_expr = ListExpression(
+        elements=[NumberLiteral(19, temp_location)],
+        location=temp_location
+    )
+
+    assert len(list_expr.elements) == 1
+    assert list_expr.elements[0].value == 19
+    assert list_expr.elements[0].location == temp_location
+
+    list_expr = ListExpression(
+        elements=[NumberLiteral(19, temp_location), NumberLiteral(23, temp_location)],
+        location=temp_location
+    )
+
+    assert len(list_expr.elements) == 2
+    assert list_expr.elements[0].value == 19
+    assert list_expr.elements[0].location == temp_location
+    assert list_expr.elements[1].value == 23
+    assert list_expr.elements[1].location == temp_location
+
+    list_expr = ListExpression(
+        elements=[NumberLiteral(19, temp_location), BinaryExpression(
+            left=NumberLiteral(20, temp_location), operator=TokenType.PLUS, right=NumberLiteral(10, temp_location), location=temp_location
+        )],
+        location=temp_location
+    )
+
+    assert len(list_expr.elements) == 2
+    assert list_expr.elements[0].value == 19
+    assert list_expr.elements[0].location == temp_location
+    assert list_expr.elements[1].left.value == 20
+    assert list_expr.elements[1].right.value == 10
+    assert list_expr.elements[1].operator == TokenType.PLUS
+    assert list_expr.elements[1].location == temp_location
+
+    list_expr = ListExpression(
+        elements=[NumberLiteral(19, temp_location), StringLiteral("Taha", location=temp_location), BooleanLiteral(True, temp_location)],
+        location=temp_location
+    )
+
+    assert len(list_expr.elements) == 3
+    assert list_expr.elements[0].value == 19
+    assert list_expr.elements[0].location == temp_location
+    assert list_expr.elements[1].value == "Taha"
+    assert list_expr.elements[1].location == temp_location
+    assert list_expr.elements[2].value == True
+    assert list_expr.elements[2].location == temp_location
+
+    list_expr = ListExpression(
+        elements=[],
+        location=temp_location
+    )
+
+    assert len(list_expr.elements) == 0
