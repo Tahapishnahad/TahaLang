@@ -6,6 +6,8 @@ from interpreter import Interpreter, Environment
 from errors import TahaRuntimeError
 from ast_nodes import *
 from tokens import TokenType
+from lexer import Lexer
+from parser import Parser
 
 # --------- Test Environment -----------
 def test_define():
@@ -240,6 +242,13 @@ def unary(operator, operand):
         location=make_location()
     )
 
+def list(elements):
+    return make_node(
+        ListExpression,
+        elements=elements,
+        location=make_location()
+    )
+
 
 @pytest.fixture
 def env():
@@ -262,11 +271,14 @@ def interpreter(env):
         (string("Hello"), "Hello"),
         (boolean(True), True),
         (boolean(False), False),
+        (list(elements=[number(1), number(2), number(3)]), [1, 2, 3]),
+        (list(elements=[]), []),
+        (list(elements=[binary(left=number(4), operator=TokenType.PLUS, right=number(6)), number(2), number(3)]), [10, 2, 3]),
+        (list(elements=[string("Taha"), boolean(True), number(7), number(9.9)]), ["Taha", True, 7, 9.9])
     ]
 )
 def test_literal_evaluation(interpreter, expr, expected, env):
     assert interpreter.execute_expression(expr, env) == expected
-
 
 # -------------------------
 # PLUS
@@ -424,6 +436,7 @@ def test_percent_invalid_types(interpreter, env):
         (boolean(True), number(1), False),
         (string("Hello"), string("Hello"), True),
         (string("Hello"), string("World"), False),
+        (list(elements=[binary(number(10), operator=TokenType.PLUS, right=number(8)), number(99)]), list(elements=[number(18), number(99)]), True)
     ]
 )
 def test_equal_equal(interpreter, left, right, expected, env):
@@ -866,3 +879,56 @@ def test_execute_empty_program(interpreter, env):
     interpreter.execute_program(program, env)
 
     assert env.variables == {}
+
+def test_nested_list_directly(interpreter, env):
+    expr = list(elements=[
+        number(10),
+        list(elements=[number(20), number(30)])
+    ])
+
+    with pytest.raises(TahaRuntimeError):
+        interpreter.execute_expression(expr, env)
+
+def test_nested_list_through_identifier(interpreter, env):
+    env.define(
+        name="numbers",
+        value=[10, 20],
+        source_location=LOC
+    )
+
+    expr = list(elements=[
+        number(5),
+        make_node(
+            Identifier,
+            name="numbers",
+            location=make_location()
+        )
+    ])
+
+    with pytest.raises(TahaRuntimeError):
+        interpreter.execute_expression(expr, env)
+
+def test_nested_list_through_multiple_identifiers(interpreter, env):
+    env.define("a", [10, 20], LOC)
+    env.define("b", [30, 40], LOC)
+
+    expr = list(elements=[
+        make_node(Identifier, name="a", location=make_location()),
+        make_node(Identifier, name="b", location=make_location())
+    ])
+
+    with pytest.raises(TahaRuntimeError):
+        interpreter.execute_expression(expr, env)
+
+def test_list_assignment_to_variable(interpreter, env):
+    env.define("a", [10, 20], LOC)
+
+    statement = LetStatement(
+        name="b",
+        value=Identifier("a", LOC),
+        location=LOC
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert env.get("b", LOC) == [10, 20]

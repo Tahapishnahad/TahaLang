@@ -101,3 +101,8 @@ class TahaRuntimeError(TahaLangError):
     @classmethod
     def variable_already_defined(cls, name, line, column):
         return cls(f"{name!r} is already defined.", line, column)
+
+
+    @classmethod
+    def nested_list(cls, line, column):
+        return cls("Nested list. Can't define list expression in another one.", line, column)

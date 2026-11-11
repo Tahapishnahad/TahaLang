@@ -2,6 +2,8 @@
 
 from errors import TahaRuntimeError
 from ast_nodes import *
+from parser import Parser
+from lexer import Lexer
 
 class Environment:
     def __init__(self, parent=None):
@@ -206,6 +208,23 @@ class Interpreter:
                     
                     return not operand
 
+        elif isinstance(expr, ListExpression):
+            list_elements = []
+
+            for element in expr.elements:
+                value = self.execute_expression(expr=element, env=env)
+
+                if isinstance(value, list):
+                    raise TahaRuntimeError.nested_list(
+                        line=element.location.line,
+                        column=element.location.column
+                    )
+
+                list_elements.append(value)
+
+            return list_elements
+            
+
     def execute_statement(self, statement: Statement, env: Environment):
         if isinstance(statement, LetStatement):
             self.execute_let_statement(
@@ -295,3 +314,4 @@ class Interpreter:
             return False
         else:
             return left == right
+
