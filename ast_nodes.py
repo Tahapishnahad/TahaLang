@@ -62,6 +62,12 @@ class Identifier(Expression):
     location: SourceLocation
 
 @dataclass
+class IndexExpression:
+    object: Expression
+    index: Expression
+    location: SourceLocation
+
+@dataclass
 class ListExpression(Expression):
     elements: list[Expression]
     location: SourceLocation

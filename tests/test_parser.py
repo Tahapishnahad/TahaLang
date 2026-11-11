@@ -18,7 +18,8 @@ from ast_nodes import (
     UnaryExpression,
     IfStatement,
     BlockStatement,
-    ListExpression
+    ListExpression,
+    IndexExpression
 )
 from tokens import TokenType
 
@@ -1100,3 +1101,80 @@ def test_invalid_list_expression(source):
 
     with pytest.raises(TahaSyntaxError):
         parser.parse_expression()
+
+def test_parse_postfix():
+    # Identifier Indexing
+    lexer = Lexer("number[0]")
+    parser = Parser(lexer.scan_tokens())
+    ast_nodes = parser.parse_postfix()
+
+    assert isinstance(ast_nodes, IndexExpression)
+    assert isinstance(ast_nodes.object, Identifier)
+    assert ast_nodes.object.name == "number"
+    assert ast_nodes.location.line == 1
+    assert ast_nodes.location.column == 1
+    assert ast_nodes.index.value == 0
+    assert isinstance(ast_nodes.index, NumberLiteral)
+    assert ast_nodes.index.location.line == 1
+    assert ast_nodes.index.location.column == 8
+
+    # List Expression Indexing
+    lexer = Lexer("[1, 2, 3][1]")
+    parser = Parser(lexer.scan_tokens())
+    ast_nodes = parser.parse_postfix()
+
+    assert isinstance(ast_nodes, IndexExpression)
+    assert isinstance(ast_nodes.object, ListExpression)
+    assert ast_nodes.object.elements[0].value == 1
+    assert ast_nodes.object.elements[1].value == 2
+    assert ast_nodes.object.elements[2].value == 3
+    assert isinstance(ast_nodes.index, NumberLiteral)
+    assert ast_nodes.index.value == 1
+    assert ast_nodes.location.line == 1
+    assert ast_nodes.location.column == 1
+    assert ast_nodes.object.location.line == 1
+    assert ast_nodes.object.location.column == 1
+    assert ast_nodes.index.location.line == 1
+    assert ast_nodes.index.location.column == 11
+
+    # Expression Indexing
+    lexer = Lexer("numbers[1 + 5]")
+    parser = Parser(lexer.scan_tokens())
+    ast_nodes = parser.parse_postfix()
+
+    assert isinstance(ast_nodes, IndexExpression)
+    assert isinstance(ast_nodes.object, Identifier)
+    assert isinstance(ast_nodes.index, BinaryExpression)
+    assert ast_nodes.object.name == "numbers"
+    assert ast_nodes.object.location.line == 1
+    assert ast_nodes.object.location.column == 1
+    assert ast_nodes.index.left.value == 1
+    assert ast_nodes.index.left.location.line == 1
+    assert ast_nodes.index.left.location.column == 9
+    assert ast_nodes.index.operator == TokenType.PLUS
+    assert ast_nodes.index.right.value == 5
+    assert ast_nodes.index.right.location.line == 1
+    assert ast_nodes.index.right.location.column == 13
+
+@pytest.mark.parametrize("source", [
+    "numbers[10",
+    "numbers[]",
+    "numbers[1 +]"
+])
+def test_invalid_postfix_expression(source):
+    lexer = Lexer(source)
+    parser = Parser(tokens=lexer.scan_tokens())
+
+    with pytest.raises(TahaSyntaxError):
+        parser.parse_postfix()
+
+# Next Updates
+@pytest.mark.parametrize("source", [
+    "let result = numbers[1][9]",
+])
+def test_chained_indexing_is_invalid(source):
+    lexer = Lexer(source)
+    parser = Parser(tokens=lexer.scan_tokens())
+
+    with pytest.raises(TahaSyntaxError):
+        parser.parse()

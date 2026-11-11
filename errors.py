@@ -77,6 +77,10 @@ class TahaSyntaxError(TahaLangError):
     def expected_expression_after_comma(cls, line, column, got):
         return cls(f"Expected Expression after COMMA. got: {got}", line, column)
 
+    @classmethod
+    def expected_list_or_identifier_for_postfix(cls, line, column, got):
+        return cls(f"Expected list or identifier for locating index. got: {got}", line, column)
+
 
 class TahaRuntimeError(TahaLangError):
     def __init__(self, message, line, column):

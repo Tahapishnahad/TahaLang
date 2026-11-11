@@ -17,7 +17,8 @@ from ast_nodes import (
     Identifier,
     BinaryExpression,
     UnaryExpression,
-    ListExpression
+    ListExpression,
+    IndexExpression
 )
 
 UNARY_OPERATORS = {
@@ -271,7 +272,26 @@ class Parser:
                 location=location
             )
 
-        return self.parse_primary()
+        return self.parse_postfix()
+
+    def parse_postfix(self):
+
+        object_expr = self.parse_primary()
+
+        if self.current.type != TokenType.LEFT_SQBRACKET:
+            return object_expr
+
+        self.consume(TokenType.LEFT_SQBRACKET)
+
+        index = self.parse_expression()
+
+        self.consume(TokenType.RIGHT_SQBRACKET)
+
+        return IndexExpression(
+            object=object_expr,
+            index=index,
+            location=object_expr.location
+        )
 
     def parse_list_expression(self):
         location = SourceLocation(self.current.line, self.current.column)
@@ -392,9 +412,9 @@ class Parser:
             self.advance()
 
 def main():
-    l = Lexer('')
+    l = Lexer('[1, 2 ,3][1 + 2]')
     p = Parser(tokens=l.scan_tokens())
-    print(p.parse_list_expression())
+    print(p.parse_postfix())
 
 if __name__ == "__main__":
     main()

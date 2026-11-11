@@ -14,7 +14,8 @@ from ast_nodes import (
     Identifier,
     BinaryExpression,
     UnaryExpression,
-    ListExpression
+    ListExpression,
+    IndexExpression
 )
 
 
@@ -324,3 +325,35 @@ def test_list_expression():
     )
 
     assert len(list_expr.elements) == 0
+
+def test_index_expression():
+    temp_location = SourceLocation(1, 1)
+
+    list_expr = ListExpression(
+        elements=[NumberLiteral(10, temp_location), NumberLiteral(20, temp_location), NumberLiteral(30, temp_location)],
+        location=temp_location
+    )
+
+    index_expr = IndexExpression(
+        object=list_expr,
+        index=NumberLiteral(1, temp_location),
+        location=temp_location
+    )
+
+    assert index_expr.object == list_expr
+    assert index_expr.location == temp_location
+    assert index_expr.index.value == 1
+    assert index_expr.index.location == temp_location
+
+    identifier = Identifier("list", temp_location)
+    index_expr = IndexExpression(
+        object=identifier,
+        index=NumberLiteral(1, temp_location),
+        location=temp_location
+    )
+
+    assert index_expr.index.value == 1
+    assert index_expr.index.location == temp_location
+    assert index_expr.object.name == "list"
+    assert index_expr.object.location == temp_location
+    assert index_expr.location == temp_location
