@@ -249,6 +249,13 @@ def list(elements):
         location=make_location()
     )
 
+def index(object, index):
+    return make_node(
+        IndexExpression,
+        object=object,
+        index=index,
+        location=make_location()
+    )
 
 @pytest.fixture
 def env():
@@ -932,3 +939,164 @@ def test_list_assignment_to_variable(interpreter, env):
     interpreter.execute_statement(statement, env)
 
     assert env.get("b", LOC) == [10, 20]
+
+# -------------------------
+# IndexExpression
+# -------------------------
+
+def test_index_list_identifier(interpreter, env):
+    env.define(
+        name="numbers",
+        value=[10, 20, 30],
+        source_location=LOC
+    )
+
+    expr = index(
+        object=make_node(
+            Identifier,
+            name="numbers",
+            location=make_location()
+        ),
+        index=number(1)
+    )
+
+    assert interpreter.execute_expression(expr, env) == 20
+
+
+def test_index_list_literal(interpreter, env):
+    expr = index(
+        object=list(elements=[
+            number(5),
+            number(15),
+            number(25)
+        ]),
+        index=number(2)
+    )
+
+    assert interpreter.execute_expression(expr, env) == 25
+
+
+def test_index_string_literal(interpreter, env):
+    expr = index(
+        object=string("Taha"),
+        index=number(0)
+    )
+
+    assert interpreter.execute_expression(expr, env) == "T"
+
+@pytest.mark.parametrize(
+    ("expr", "i"),
+    [
+        (list([1, 2, 3]), unary(operator=TokenType.MINUS, operand=number(2))),
+        (list([1, 2, 3]), number(99)),
+        (list([]), number(2)),
+        (list([1, 2, 3]), string("Invalid Type")),
+        (list([1, 2, 3]), number(9.9)),
+        (list([1, 2, 3]), boolean(True)),
+        (number(232), number(2)),
+        (number(9.9), number(2)),
+        (boolean(True), number(2))
+    ]
+)
+def test_index_errors(interpreter, expr, i, env):
+    expr = index(object=expr, index=i)
+
+    with pytest.raises(TahaRuntimeError):
+        interpreter.execute_expression(expr, env)
+
+def test_index_negative_error(interpreter, env):
+    expr = index(
+        object=list([number(1), number(2), number(3)]),
+        index=number(-1)
+    )
+
+    with pytest.raises(TahaRuntimeError) as exc:
+        interpreter.execute_expression(expr, env)
+
+    assert str(exc.value) == "TahaRuntimeError at line 1, column 1: Iterable's index couldn't be negative. index: -1"
+
+def test_index_out_of_range_error(interpreter, env):
+    expr = index(
+        object=list([number(1), number(2), number(3)]),
+        index=number(10)
+    )
+
+    with pytest.raises(TahaRuntimeError) as exc:
+        interpreter.execute_expression(expr, env)
+
+    assert str(exc.value) == "TahaRuntimeError at line 1, column 1: Iterable's max index is 2, got: 10"
+
+def test_index_empty_list_error(interpreter, env):
+    expr = index(
+        object=list([]),
+        index=number(1)
+    )
+
+    with pytest.raises(TahaRuntimeError) as exc:
+        interpreter.execute_expression(expr, env)
+
+    assert str(exc.value) == "TahaRuntimeError at line 1, column 1: Iterable dosen't have any items."
+
+def test_index_invalid_object_error(interpreter, env):
+    expr = index(
+        object=number(80),
+        index=number(1)
+    )
+
+    with pytest.raises(TahaRuntimeError) as exc:
+        interpreter.execute_expression(expr, env)
+
+    assert str(exc.value) == "TahaRuntimeError at line 1, column 1: Invalid object for index expression, expected iterable got int"
+
+def test_index_float_error(interpreter, env):
+    expr = index(
+        object=list([number(1), number(2), number(3)]),
+        index=number(1.1)
+    )
+
+    with pytest.raises(TahaRuntimeError) as exc:
+        interpreter.execute_expression(expr, env)
+
+    assert str(exc.value) == "TahaRuntimeError at line 1, column 1: Iterable's index must be int. got: 1.1"
+
+def test_index_boolean_error(interpreter, env):
+    expr = index(
+        object=list([number(1), number(2), number(3)]),
+        index=boolean(True)
+    )
+
+    with pytest.raises(TahaRuntimeError) as exc:
+        interpreter.execute_expression(expr, env)
+
+    assert str(exc.value) == "TahaRuntimeError at line 1, column 1: Iterable's index must be int. got: True"
+
+def test_index_string_valid(interpreter, env):
+    expr = index(
+        object=string("Taha"),
+        index=number(1)
+    )
+
+    assert interpreter.execute_expression(expr, env) == "a"
+
+def test_index_string_out_of_range(interpreter, env):
+    expr = index(
+        object=string("Taha"),
+        index=number(10)
+    )
+
+    with pytest.raises(TahaRuntimeError) as exc:
+        interpreter.execute_expression(expr, env)
+
+    assert "max index is 3" in str(exc.value)
+
+def test_index_empty_string(interpreter, env):
+    expr = index(
+        object=string(""),
+        index=number(0)
+    )
+
+    with pytest.raises(TahaRuntimeError) as exc:
+        interpreter.execute_expression(expr, env)
+
+    assert "Iterable dosen't have any items." in str(exc.value)
+

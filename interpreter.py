@@ -223,7 +223,51 @@ class Interpreter:
                 list_elements.append(value)
 
             return list_elements
+
+        elif isinstance(expr, IndexExpression):
+            expr_object = self.execute_expression(expr.object, env)
+
+            if type(expr_object) not in (list, str):
+                raise TahaRuntimeError.invalid_object_for_index_expression(
+                    line=expr.object.location.line,
+                    column=expr.object.location.column,
+                    got=type(expr_object).__name__
+                )
+
+
+            expr_index = self.execute_expression(expr.index, env)
+
+            if type(expr_index) != int:
+                raise TahaRuntimeError.invalid_type_index(
+                    got=expr_index,
+                    line=expr.index.location.line,
+                    column=expr.index.location.column
+                )
+
+            if expr_index < 0:
+                raise TahaRuntimeError.negative_index(
+                    got=expr_index,
+                    line=expr.index.location.line,
+                    column=expr.index.location.column
+                )
+
+            if expr_index >= len(expr_object):
+                max_index = len(expr_object)-1
+
+                if max_index == -1:
+                    raise TahaRuntimeError.zero_index(
+                        line=expr.index.location.line,
+                        column=expr.index.location.column
+                    )
+
+                raise TahaRuntimeError.invalid_index(
+                    max_index=max_index,
+                    got_index=expr_index,
+                    line=expr.index.location.line,
+                    column=expr.index.location.column
+                )
             
+            return expr_object[expr_index]
 
     def execute_statement(self, statement: Statement, env: Environment):
         if isinstance(statement, LetStatement):

@@ -110,3 +110,23 @@ class TahaRuntimeError(TahaLangError):
     @classmethod
     def nested_list(cls, line, column):
         return cls("Nested list. Can't define list expression in another one.", line, column)
+
+    @classmethod
+    def invalid_object_for_index_expression(cls, line, column, got):
+        return cls(f"Invalid object for index expression, expected iterable got {got}", line, column)
+
+    @classmethod
+    def invalid_index(cls, max_index, got_index, line, column):
+        return cls(f"Iterable's max index is {max_index}, got: {got_index}", line, column)
+
+    @classmethod
+    def negative_index(cls, got, line, column):
+        return cls(f"Iterable's index couldn't be negative. index: {got}", line, column)
+
+    @classmethod
+    def invalid_type_index(cls, got, line, column):
+        return cls(f"Iterable's index must be int. got: {got}", line, column)
+
+    @classmethod
+    def zero_index(cls, line, column):
+        return cls("Iterable dosen't have any items.", line, column)
