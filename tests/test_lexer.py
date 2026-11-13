@@ -247,7 +247,7 @@ def test_scan_identifier():
         ("=", TokenType.EQUAL),
         ("20", TokenType.INTEGER),
         ("\n", TokenType.NEWLINE),
-        ("print", TokenType.PRINT),
+        ("print", TokenType.IDENTIFIER),
         ("(", TokenType.LEFT_PAREN),
         ("user123", TokenType.IDENTIFIER),
         (")", TokenType.RIGHT_PAREN)
@@ -262,16 +262,15 @@ def test_scan_identifier():
 def test_scan_identifier_keywords():
 
     expected = [
-            ("let", TokenType.LET),
-            ("if", TokenType.IF),
-            ("else", TokenType.ELSE),
-            ("print", TokenType.PRINT),
-            ("True", TokenType.TRUE),
-            ("False", TokenType.FALSE)
+        ("let", TokenType.LET),
+        ("if", TokenType.IF),
+        ("else", TokenType.ELSE),
+        ("True", TokenType.TRUE),
+        ("False", TokenType.FALSE)
     ]
 
 
-    source = "let if else print True False"
+    source = "let if else True False"
     lexer = Lexer(source)
     tokens = lexer.scan_tokens()
 
@@ -454,7 +453,7 @@ def test_multiline_token_positions():
 
     print_token = next(
         token for token in tokens
-        if token.type == TokenType.PRINT
+        if token.type == TokenType.IDENTIFIER and token.value == "print"
     )
 
     assert print_token.line == 2

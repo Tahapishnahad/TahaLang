@@ -8,6 +8,7 @@ from ast_nodes import *
 from tokens import TokenType
 from lexer import Lexer
 from parser import Parser
+import taha_builtins
 
 # --------- Test Environment -----------
 def test_define():
@@ -257,13 +258,29 @@ def index(object, index):
         location=make_location()
     )
 
+def call(callee, arguments):
+    return make_node(
+        CallExpression,
+        callee=callee,
+        arguments=arguments,
+        location=make_location()
+    )
+
 @pytest.fixture
 def env():
     return Environment()
 
 @pytest.fixture
-def interpreter(env):
-    return Interpreter(env)
+def builtins():
+    builtins = taha_builtins.BuiltinRegistry()
+    builtins.register("print", print)
+    builtins.register("len", len)
+    builtins.register("sum", sumer)
+    return builtins
+
+@pytest.fixture
+def interpreter(env, builtins):
+    return Interpreter(env, builtins)
 
 
 # -------------------------
@@ -1100,3 +1117,69 @@ def test_index_empty_string(interpreter, env):
 
     assert "Iterable dosen't have any items." in str(exc.value)
 
+def test_execute_call_expression(interpreter, env):
+    expr = CallExpression(
+        callee=Identifier("len", LOC),
+        arguments=[list([number(1), number(2), number(3)])],
+        location=LOC
+    )
+
+    assert interpreter.execute_call_expression(expr, env) == 3
+
+def test_execute_call_expression_unknown_function(interpreter, env):
+    expr = CallExpression(
+        callee=Identifier("unknown_function", LOC),
+        arguments=[],
+        location=LOC
+    )
+
+    with pytest.raises(TahaRuntimeError):
+        interpreter.execute_call_expression(expr, env)
+
+def test_execute_call_expression_invalid_function_callee(interpreter, env):
+    expr = CallExpression(
+        callee=number(2),
+        arguments=[],
+        location=LOC
+    )
+
+    with pytest.raises(TahaRuntimeError):
+        interpreter.execute_call_expression(expr, env)
+
+def sumer(a, b):
+    return a + b
+
+def test_execute_call_expression_executes_arguments(interpreter, env):
+    expr = CallExpression(
+        callee=Identifier("sum", LOC),
+        arguments=[
+            binary(number(8), TokenType.STAR, number(3)),
+            number(8)
+        ],
+        location=LOC
+    )
+
+    assert interpreter.execute_call_expression(expr, env) == 32
+
+def test_execute_call_expression_accepts_multiple_arguments(interpreter, env):
+    expr = CallExpression(
+        callee=Identifier("sum", LOC),
+        arguments=[
+            number(1),
+            number(8),
+            number(2),
+            number(9),
+        ],
+        location=LOC
+    )
+
+    assert interpreter.execute_call_expression(expr, env) == 20
+
+def test_execute_call_expression_accepts_non_argument_functions(interpreter, env):
+    expr = CallExpression(
+        callee=Identifier("print", LOC),
+        arguments=[],
+        location=LOC
+    )
+
+    assert interpreter.execute_call_expression(expr, env) == None

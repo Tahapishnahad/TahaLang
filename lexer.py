@@ -24,7 +24,6 @@ KEYWORDS = {
     "let": TokenType.LET,
     "if": TokenType.IF,
     "else": TokenType.ELSE,
-    "print": TokenType.PRINT,
     "True": TokenType.TRUE,
     "False": TokenType.FALSE
 }

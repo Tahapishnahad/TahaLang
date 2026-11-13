@@ -9,7 +9,6 @@ from ast_nodes import (
     Program,
     SourceLocation,
     LetStatement,
-    PrintStatement,
     NumberLiteral,
     StringLiteral,
     BooleanLiteral,
@@ -19,7 +18,9 @@ from ast_nodes import (
     IfStatement,
     BlockStatement,
     ListExpression,
-    IndexExpression
+    IndexExpression,
+    CallExpression,
+    CallStatement
 )
 from tokens import TokenType
 
@@ -27,6 +28,10 @@ from tokens import TokenType
 def parse_source(source):
     tokens = Lexer(source).scan_tokens()
     return Parser(tokens).parse()
+
+def get_call_argument(program, statement_index=0, argument_index=0):
+    statement = program.statements[statement_index]
+    return statement.call.arguments[argument_index]
 
 
 # -------------------------
@@ -45,7 +50,7 @@ def test_multiple_statements():
 
     assert len(program.statements) == 2
     assert isinstance(program.statements[0], LetStatement)
-    assert isinstance(program.statements[1], PrintStatement)
+    assert isinstance(program.statements[1], CallStatement)
 
 
 def test_blank_lines_between_statements():
@@ -109,30 +114,37 @@ def test_let_identifier():
 
 
 # -------------------------
-# print statements
+# Function Call Statements
 # -------------------------
 
 def test_print_string():
     program = parse_source('print("Hello")')
     statement = program.statements[0]
 
-    assert isinstance(statement, PrintStatement)
-    assert isinstance(statement.expression, StringLiteral)
-    assert statement.expression.value == "Hello"
+    assert isinstance(statement, CallStatement)
+    assert isinstance(statement.call, CallExpression)
+
+    assert isinstance(statement.call.callee, Identifier)
+    assert statement.call.callee.name == "print"
+
+    assert len(statement.call.arguments) == 1
+    assert isinstance(statement.call.arguments[0], StringLiteral)
+    assert statement.call.arguments[0].value == "Hello"
 
 
 def test_print_number():
     program = parse_source("print(42)")
     statement = program.statements[0]
 
-    assert isinstance(statement, PrintStatement)
-    assert isinstance(statement.expression, NumberLiteral)
-    assert statement.expression.value == 42
+    assert isinstance(statement, CallStatement)
+    assert isinstance(statement.call, CallExpression)
+    assert isinstance(statement.call.arguments[0], NumberLiteral)
+    assert statement.call.arguments[0].value == 42
 
 
 def test_print_binary_expression():
     program = parse_source("print(2 + 3)")
-    expression = program.statements[0].expression
+    expression = program.statements[0].call.arguments[0]
 
     assert isinstance(expression, BinaryExpression)
     assert isinstance(expression.left, NumberLiteral)
@@ -140,7 +152,6 @@ def test_print_binary_expression():
     assert expression.operator == TokenType.PLUS
     assert isinstance(expression.right, NumberLiteral)
     assert expression.right.value == 3
-
 
 # -------------------------
 # Binary expressions
@@ -257,10 +268,8 @@ def test_unary_operator_without_operand_is_invalid(source):
         "let a =",
         "let a = + 3",
         "let a = 2 +",
-        "print()",
         "print(2",
         "print 2)",
-        "unknown(3)",
         "let a = 3 abc",
     ],
 )
@@ -406,7 +415,7 @@ if (True) {
     block = program.statements[0].then_branch
 
     assert len(block.statements) == 1
-    assert isinstance(block.statements[0], PrintStatement)
+    assert isinstance(block.statements[0], CallStatement)
 
 
 def test_block_with_multiple_statements():
@@ -421,8 +430,8 @@ if (True) {
     block = program.statements[0].then_branch
 
     assert len(block.statements) == 3
-    assert isinstance(block.statements[0], PrintStatement)
-    assert isinstance(block.statements[1], PrintStatement)
+    assert isinstance(block.statements[0], CallStatement)
+    assert isinstance(block.statements[1], CallStatement)
     assert isinstance(block.statements[2], LetStatement)
 
 
@@ -440,7 +449,7 @@ if (True) {
     block = program.statements[0].then_branch
 
     assert len(block.statements) == 1
-    assert isinstance(block.statements[0], PrintStatement)
+    assert isinstance(block.statements[0], CallStatement)
 
 
 def test_block_last_statement_can_be_immediately_followed_by_closing_brace():
@@ -448,7 +457,7 @@ def test_block_last_statement_can_be_immediately_followed_by_closing_brace():
 
     block = program.statements[0].then_branch
     assert len(block.statements) == 1
-    assert isinstance(block.statements[0], PrintStatement)
+    assert isinstance(block.statements[0], CallStatement)
 
 
 @pytest.mark.parametrize(
@@ -623,7 +632,7 @@ if (True) {
 def test_number_literal_location():
     program = parse_source("print(123)")
 
-    expression = program.statements[0].expression
+    expression = get_call_argument(program)
 
     assert expression.location == SourceLocation(1, 7)
 
@@ -631,7 +640,7 @@ def test_number_literal_location():
 def test_binary_expression_location():
     program = parse_source("print(10 + 20)")
 
-    expression = program.statements[0].expression
+    expression = get_call_argument(program)
 
     assert expression.location == SourceLocation(1, 7)
 
@@ -639,7 +648,7 @@ def test_binary_expression_location():
 def test_unary_expression_location():
     program = parse_source("print(-10)")
 
-    expression = program.statements[0].expression
+    expression = get_call_argument(program)
 
     assert expression.location == SourceLocation(1, 7)
 
@@ -903,7 +912,7 @@ if (True) {
 def test_string_literal_location():
     program = parse_source('print("hello")')
 
-    expression = program.statements[0].expression
+    expression = get_call_argument(program)
 
     assert expression.location == SourceLocation(1, 7)
 
@@ -911,7 +920,7 @@ def test_string_literal_location():
 def test_boolean_literal_location():
     program = parse_source("print(True)")
 
-    expression = program.statements[0].expression
+    expression = get_call_argument(program)
 
     assert expression.location == SourceLocation(1, 7)
 
@@ -919,7 +928,7 @@ def test_boolean_literal_location():
 def test_identifier_location():
     program = parse_source("print(value)")
 
-    expression = program.statements[0].expression
+    expression = get_call_argument(program)
 
     assert expression.location == SourceLocation(1, 7)
 
@@ -927,7 +936,7 @@ def test_identifier_location():
 def test_nested_unary_location():
     program = parse_source("print(!-5)")
 
-    expression = program.statements[0].expression
+    expression = get_call_argument(program)
 
     assert expression.location == SourceLocation(1, 7)
     assert expression.operand.location == SourceLocation(1, 8)
@@ -936,7 +945,7 @@ def test_nested_unary_location():
 def test_binary_expression_with_unary_left_location():
     program = parse_source("print(-1 * 2)")
 
-    expression = program.statements[0].expression
+    expression = get_call_argument(program)
 
     assert expression.location == SourceLocation(1, 7)
     assert expression.left.location == SourceLocation(1, 7)
@@ -954,13 +963,13 @@ def test_let_statement_location():
     assert statement.location == SourceLocation(1, 1)
 
 
-def test_print_statement_location():
+def test_call_statement_location():
     program = parse_source("print(10)")
 
     statement = program.statements[0]
 
-    assert isinstance(statement, PrintStatement)
-    assert statement.location == SourceLocation(1, 1)
+    assert isinstance(statement, CallStatement)
+    assert statement.call.location == SourceLocation(1, 1)
 
 
 def test_if_statement_location():
@@ -1003,7 +1012,7 @@ def test_nested_statement_locations():
 
     assert if_statement.location == SourceLocation(1, 1)
     assert block.location == SourceLocation(1, 11)
-    assert print_statement.location == SourceLocation(2, 5)
+    assert print_statement.call.location == SourceLocation(2, 5)
 
 def test_list_expression():
     lexer = Lexer("[10, 20, 30]")
@@ -1178,3 +1187,93 @@ def test_chained_indexing_is_invalid(source):
 
     with pytest.raises(TahaSyntaxError):
         parser.parse()
+
+# =========================
+# Function Call Expressions
+# =========================
+
+def test_call_expression():
+    expression = parse_expression('len("Hello")')
+
+    assert isinstance(expression, CallExpression)
+    assert isinstance(expression.callee, Identifier)
+    assert expression.callee.name == "len"
+
+    assert len(expression.arguments) == 1
+    assert isinstance(expression.arguments[0], StringLiteral)
+    assert expression.arguments[0].value == "Hello"
+
+
+def test_call_expression_with_multiple_arguments():
+    expression = parse_expression("some_function(10, 20, 30)")
+
+    assert isinstance(expression, CallExpression)
+    assert len(expression.arguments) == 3
+
+    assert expression.arguments[0].value == 10
+    assert expression.arguments[1].value == 20
+    assert expression.arguments[2].value == 30
+
+
+def test_call_expression_with_no_arguments():
+    expression = parse_expression("some_function()")
+
+    assert isinstance(expression, CallExpression)
+    assert expression.callee.name == "some_function"
+    assert expression.arguments == []
+
+
+def test_call_expression_inside_binary_expression():
+    expression = parse_expression('len("Hello") + 5')
+
+    assert isinstance(expression, BinaryExpression)
+    assert expression.operator == TokenType.PLUS
+
+    assert isinstance(expression.left, CallExpression)
+    assert expression.left.callee.name == "len"
+    assert expression.left.arguments[0].value == "Hello"
+
+    assert isinstance(expression.right, NumberLiteral)
+    assert expression.right.value == 5
+
+
+def test_call_expression_inside_let_statement():
+    program = parse_source('let result = len("Hello")')
+
+    statement = program.statements[0]
+
+    assert isinstance(statement, LetStatement)
+    assert isinstance(statement.value, CallExpression)
+    assert statement.value.callee.name == "len"
+
+
+def test_nested_call_expression():
+    expression = parse_expression('outer(inner("Hello"))')
+
+    assert isinstance(expression, CallExpression)
+    assert expression.callee.name == "outer"
+
+    inner_call = expression.arguments[0]
+
+    assert isinstance(inner_call, CallExpression)
+    assert inner_call.callee.name == "inner"
+    assert inner_call.arguments[0].value == "Hello"
+
+
+# =========================
+# Invalid Function Calls
+# =========================
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "some_function(,)",
+        "some_function(10,,20)",
+        "some_function(10,)",
+        "some_function(10 20)",
+        "some_function(10",
+    ],
+)
+def test_invalid_function_call(source):
+    with pytest.raises(TahaSyntaxError):
+        parse_expression(source)

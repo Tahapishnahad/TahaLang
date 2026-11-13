@@ -25,11 +25,6 @@ class LetStatement(Statement):
     location: SourceLocation
 
 @dataclass
-class PrintStatement(Statement):
-    expression: Expression
-    location: SourceLocation
-
-@dataclass
 class BlockStatement(Statement):
     statements: list[Statement]
     location: SourceLocation
@@ -62,7 +57,7 @@ class Identifier(Expression):
     location: SourceLocation
 
 @dataclass
-class IndexExpression:
+class IndexExpression(Expression):
     object: Expression
     index: Expression
     location: SourceLocation
@@ -84,3 +79,13 @@ class UnaryExpression(Expression):
     operand: Expression
     operator: TokenType
     location: SourceLocation
+
+@dataclass
+class CallExpression(Expression):
+    callee: Identifier
+    arguments: list[Expression]
+    location: SourceLocation
+
+@dataclass
+class CallStatement(Statement):
+    call: CallExpression

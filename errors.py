@@ -74,6 +74,18 @@ class TahaSyntaxError(TahaLangError):
         return cls("Unexpected COMMA in list expression", line, column)
 
     @classmethod
+    def unexpected_comma_in_call_expression(cls, line, column):
+        return cls("Unexpected COMMA in callable arguments", line, column)
+
+    @classmethod
+    def unexpected_comma_at_end_in_call_expression(cls, line, column):
+        return cls("Unexpected COMMA (at the end) in callable arguments", line, column)
+
+    @classmethod
+    def expected_comma_or_right_paren_in_call_expression(cls, line, column):
+        return cls("Expected COMMA or RIGHT_PAREN at the end in callable expression", line, column)
+
+    @classmethod
     def expected_expression_after_comma(cls, line, column, got):
         return cls(f"Expected Expression after COMMA. got: {got}", line, column)
 
@@ -130,3 +142,15 @@ class TahaRuntimeError(TahaLangError):
     @classmethod
     def zero_index(cls, line, column):
         return cls("Iterable dosen't have any items.", line, column)
+
+    @classmethod
+    def unknown_function(cls, line, column, got):
+        return cls(f"Unknown function name. {got} function doesn't exsits", line, column)
+
+    @classmethod
+    def invalid_function_callee(cls, line, column, got):
+        return cls(f"Function's callee(name) must be Identifer. got: {got}", line, column)
+
+    @classmethod
+    def invalid_function_argument_counts(cls, line, column, function_name, expected_arguments, got_arguments):
+        return cls(f"Function {function_name!r} expects {expected_arguments} argument, got {got_arguments}", line, column)

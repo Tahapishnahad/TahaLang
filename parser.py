@@ -8,7 +8,6 @@ from ast_nodes import (
     Statement,
     SourceLocation,
     LetStatement,
-    PrintStatement,
     BlockStatement,
     IfStatement,
     NumberLiteral,
@@ -18,8 +17,11 @@ from ast_nodes import (
     BinaryExpression,
     UnaryExpression,
     ListExpression,
-    IndexExpression
+    IndexExpression,
+    CallExpression,
+    CallStatement
 )
+
 
 UNARY_OPERATORS = {
     TokenType.MINUS,
@@ -78,8 +80,18 @@ class Parser:
             case TokenType.LET:
                 return self.parse_let_statement()
 
-            case TokenType.PRINT:
-                return self.parse_print_statement()
+            case TokenType.IDENTIFIER:
+                expression = self.parse_postfix()
+
+                if not isinstance(expression, CallExpression):
+                    raise TahaSyntaxError.unexpected_token_type(
+                        line=expression.location.line,
+                        column=expression.location.column,
+                        got=type(expression).__name__,
+                        expected=TokenType.IDENTIFIER.name
+                    )
+
+                return CallStatement(call=expression)
 
             case TokenType.IF:
                 return self.parse_if_statement()
@@ -107,17 +119,6 @@ class Parser:
 
         return LetStatement(name=identifier.value, value=value, location=location)
 
-    def parse_print_statement(self):
-        location = SourceLocation(self.current.line, self.current.column)
-        self.advance()
-
-        self.consume(TokenType.LEFT_PAREN)
-
-        expression = self.parse_expression()
-
-        self.consume(TokenType.RIGHT_PAREN)
-
-        return PrintStatement(expression, location=location)
 
     def parse_if_statement(self):
         location = SourceLocation(self.current.line, self.current.column)
@@ -278,6 +279,48 @@ class Parser:
 
         object_expr = self.parse_primary()
 
+        if (
+            isinstance(object_expr, Identifier)
+            and self.current.type == TokenType.LEFT_PAREN
+        ):
+            
+            self.consume(TokenType.LEFT_PAREN)
+            
+            arguments = []
+
+            while self.current.type != TokenType.RIGHT_PAREN:
+                if self.current.type == TokenType.COMMA:
+                    raise TahaSyntaxError.unexpected_comma_in_call_expression(
+                        line=self.current.line,
+                        column=self.current.column
+                    )
+
+                arguments.append(
+                    self.parse_expression()
+                )
+
+                if self.current.type not in (TokenType.COMMA, TokenType.RIGHT_PAREN):
+                    raise TahaSyntaxError.expected_comma_or_right_paren_in_call_expression(
+                        line=self.current.line,
+                        column=self.current.column
+                    )
+
+                if self.current.type == TokenType.COMMA:
+                    self.advance()
+                    if self.current.type == TokenType.RIGHT_PAREN:
+                        raise TahaSyntaxError.unexpected_comma_at_end_in_call_expression(
+                            line=self.current.line,
+                            column=self.current.column
+                        )
+
+            self.consume(TokenType.RIGHT_PAREN)
+
+            return CallExpression(
+                callee=object_expr,
+                arguments=arguments,
+                location=object_expr.location
+            )
+
         if self.current.type != TokenType.LEFT_SQBRACKET:
             return object_expr
 
@@ -292,6 +335,7 @@ class Parser:
             index=index,
             location=object_expr.location
         )
+
 
     def parse_list_expression(self):
         location = SourceLocation(self.current.line, self.current.column)

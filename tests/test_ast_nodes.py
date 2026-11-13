@@ -5,7 +5,6 @@ from ast_nodes import (
     Expression,
     SourceLocation,
     LetStatement,
-    PrintStatement,
     BlockStatement,
     IfStatement,
     NumberLiteral,
@@ -15,18 +14,18 @@ from ast_nodes import (
     BinaryExpression,
     UnaryExpression,
     ListExpression,
-    IndexExpression
+    IndexExpression,
+    CallExpression,
+    CallStatement
 )
 
 
 def test_program_stores_statements():
-    statement = PrintStatement(
-        expression=NumberLiteral(
-            value=10,
-            location=SourceLocation(2, 6)
-        ),
+    statement = Identifier(
+        name="print",
         location=SourceLocation(1, 2)
     )
+
     program = Program(statements=[statement])
 
     assert len(program.statements) == 1
@@ -50,20 +49,6 @@ def test_let_statement():
     assert statement.location == SourceLocation(1, 2)
 
 
-def test_print_statement():
-    expression = StringLiteral(
-        value="Hello",
-        location=SourceLocation(2, 6)
-    )
-    statement = PrintStatement(
-        expression=expression,
-        location=SourceLocation(1, 2)
-    )
-
-    assert statement.expression is expression
-    assert statement.location == SourceLocation(1, 2)
-
-
 def test_block_statement():
     statements = [
         LetStatement(
@@ -74,11 +59,9 @@ def test_block_statement():
             ),
             location=SourceLocation(1, 2)
         ),
-        PrintStatement(
-            expression=Identifier(
-                name="x",
-                location=SourceLocation(2, 6)
-            ),
+
+        Identifier(
+            name="print",
             location=SourceLocation(3, 2)
         ),
     ]
@@ -190,6 +173,17 @@ def test_identifier():
     )
 
     assert node.name == "total"
+    assert node.location.line == 2
+    assert node.location.column == 6
+
+    node = Identifier(
+        name="print",
+        location=SourceLocation(9, 7)
+    )
+
+    assert node.name == "print"
+    assert node.location.line == 9
+    assert node.location.column == 7
 
 
 def test_binary_expression():
@@ -357,3 +351,104 @@ def test_index_expression():
     assert index_expr.object.name == "list"
     assert index_expr.object.location == temp_location
     assert index_expr.location == temp_location
+
+# -------------------------
+# CallExpression
+# -------------------------
+
+def test_call_expression():
+    callee = Identifier(
+        name="len",
+        location=SourceLocation(1, 1)
+    )
+
+    argument = StringLiteral(
+        value="Hello",
+        location=SourceLocation(1, 5)
+    )
+
+    expression = CallExpression(
+        callee=callee,
+        arguments=[argument],
+        location=SourceLocation(1, 1)
+    )
+
+    assert isinstance(expression, Expression)
+    assert expression.callee is callee
+    assert expression.arguments == [argument]
+    assert expression.location == SourceLocation(1, 1)
+
+
+def test_call_expression_with_multiple_arguments():
+    callee = Identifier(
+        name="calculate",
+        location=SourceLocation(1, 1)
+    )
+
+    arguments = [
+        NumberLiteral(value=10, location=SourceLocation(1, 11)),
+        NumberLiteral(value=20, location=SourceLocation(1, 15)),
+    ]
+
+    expression = CallExpression(
+        callee=callee,
+        arguments=arguments,
+        location=SourceLocation(1, 1)
+    )
+
+    assert len(expression.arguments) == 2
+    assert expression.arguments[0].value == 10
+    assert expression.arguments[1].value == 20
+
+
+def test_call_expression_without_arguments():
+    expression = CallExpression(
+        callee=Identifier(
+            name="some_function",
+            location=SourceLocation(1, 1)
+        ),
+        arguments=[],
+        location=SourceLocation(1, 1)
+    )
+
+    assert expression.arguments == []
+
+# -------------------------
+# CallStatement
+# -------------------------
+
+def test_call_statement():
+    call = CallExpression(
+        callee=Identifier(
+            name="print",
+            location=SourceLocation(1, 1)
+        ),
+        arguments=[
+            StringLiteral(
+                value="Hello",
+                location=SourceLocation(1, 7)
+            )
+        ],
+        location=SourceLocation(1, 1)
+    )
+
+    statement = CallStatement(call=call)
+
+    assert isinstance(statement, Statement)
+    assert statement.call is call
+    assert isinstance(statement.call, CallExpression)
+
+
+def test_call_statement_with_no_arguments():
+    call = CallExpression(
+        callee=Identifier(
+            name="print",
+            location=SourceLocation(1, 1)
+        ),
+        arguments=[],
+        location=SourceLocation(1, 1)
+    )
+
+    statement = CallStatement(call=call)
+
+    assert statement.call.arguments == []
