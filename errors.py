@@ -144,13 +144,17 @@ class TahaRuntimeError(TahaLangError):
         return cls("Iterable dosen't have any items.", line, column)
 
     @classmethod
-    def unknown_function(cls, line, column, got):
-        return cls(f"Unknown function name. {got} function doesn't exsits", line, column)
-
-    @classmethod
     def invalid_function_callee(cls, line, column, got):
         return cls(f"Function's callee(name) must be Identifer. got: {got}", line, column)
 
     @classmethod
     def invalid_function_argument_counts(cls, line, column, function_name, expected_arguments, got_arguments):
         return cls(f"Function {function_name!r} expects {expected_arguments} argument, got {got_arguments}", line, column)
+
+    @classmethod
+    def trying_for_accessing_to_an_invalid_function_in_registry(cls, line, column, function_name):
+        return cls(f"Trying for access to an invalid function. {function_name} is not defined in function registry", line, column)
+
+    @classmethod
+    def unexpected_type_for_len_function_argument(cls, line, column, argument_type):
+        return cls(f"'len' function argument must be List or Sting. got: {argument_type}", line, column)

@@ -2,8 +2,6 @@
 
 from errors import TahaRuntimeError
 from ast_nodes import *
-from parser import Parser
-from lexer import Lexer
 from taha_builtins import BuiltinRegistry
 
 class Environment:
@@ -59,10 +57,6 @@ class Interpreter:
     def __init__(self, env: Environment, builtins: BuiltinRegistry):
         self.env = env
         self.builtins = builtins
-        self.builtin_arg_counts = {
-            "len": 1,
-            "print": 1,
-        }
 
     def execute_program(self, program: Program, env: Environment):
         for statement in program.statements:
@@ -276,17 +270,11 @@ class Interpreter:
             return expr_object[expr_index]
 
         elif isinstance(expr, CallExpression):
-            ...
+            return self.execute_call_expression(expr, env)
 
     def execute_statement(self, statement: Statement, env: Environment):
         if isinstance(statement, LetStatement):
             self.execute_let_statement(
-                statement=statement,
-                env=env
-            )
-
-        elif isinstance(statement, PrintStatement):
-            self.execute_print_statement(
                 statement=statement,
                 env=env
             )
@@ -302,6 +290,18 @@ class Interpreter:
                 statement=statement,
                 env=env
             )
+
+        elif isinstance(statement, CallStatement):
+            self.execute_call_statement(
+                statement=statement,
+                env=env
+            )
+
+    def execute_call_statement(self, statement: CallStatement, env: Environment):
+        self.execute_call_expression(
+            expr=statement.call,
+            env=env
+        )
 
     def execute_let_statement(self, statement: LetStatement, env: Environment):
         env.define(
@@ -349,35 +349,25 @@ class Interpreter:
                 got=type(expr_callee).__name__
             )
 
-        if not self.builtins.exists(expr_callee.name):
-            raise TahaRuntimeError.unknown_function(
-                line=expr_callee.location.line,
-                column=expr_callee.location.column,
-                got=expr_callee.name
-            )
-
-        func = self.builtins.get(expr_callee.name)
         function_name = expr_callee.name
-        expected_count = self.builtin_arg_counts[function_name]
-
+        func, expected_count = self.builtins.get(expr_callee.name, expr_callee.location)
 
         if len(expr.arguments) != expected_count:
             raise TahaRuntimeError.invalid_function_argument_counts(
                 line=expr.location.line,
                 column=expr.location.column,
                 got_arguments=len(expr.arguments),
-                expected_arguments=expected_count
+                expected_arguments=expected_count,
+                function_name=function_name
             )
         
         args = []
 
         for argument in expr.arguments:
-            args.append(
-                self.execute_expression(argument, env)
-            )
-
+            value = self.execute_expression(argument, env)
+            args.append((value, argument.location))
         
-        return func(*args)
+        return func(*args[0])
    
 
     def is_number(self, value: object) -> bool:

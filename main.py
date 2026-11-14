@@ -8,6 +8,11 @@ from lexer import Lexer
 from parser import Parser
 from interpreter import Interpreter, Environment
 from errors import TahaLangError
+from taha_builtins import (
+    BuiltinRegistry,
+    builtin_print,
+    builtin_len
+)
 
 def main():
     arg_parser = argparse.ArgumentParser(
@@ -51,9 +56,18 @@ def validate_file_suffix(file_path: Path) -> bool:
 def run_source(source: str):
     lexer = Lexer(source=source)
     syntax_parser = Parser(lexer.scan_tokens())
+
     env = Environment()
-    interpreter = Interpreter(env)
+    builtin_registry = create_builtin_registry()
+    interpreter = Interpreter(env, builtins=builtin_registry)
+
     interpreter.execute_program(syntax_parser.parse(), env)
+
+def create_builtin_registry() -> BuiltinRegistry:
+    reg = BuiltinRegistry()
+    reg.register("print", builtin_print, 1)
+    reg.register("len", builtin_len, 1)
+    return reg
 
 if __name__ == "__main__":
     main()

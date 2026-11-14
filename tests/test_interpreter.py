@@ -273,9 +273,8 @@ def env():
 @pytest.fixture
 def builtins():
     builtins = taha_builtins.BuiltinRegistry()
-    builtins.register("print", print)
-    builtins.register("len", len)
-    builtins.register("sum", sumer)
+    builtins.register("print", taha_builtins.builtin_print, 1)
+    builtins.register("len", taha_builtins.builtin_len, 1)
     return builtins
 
 @pytest.fixture
@@ -579,6 +578,15 @@ def test_unary_bang_invalid_type(interpreter, env):
 
 LOC = SourceLocation(line=1, column=1)
 
+def print_statement(expression):
+    return CallStatement(
+        call=CallExpression(
+            callee=Identifier("print", LOC),
+            arguments=[expression],
+            location=LOC
+        )
+    )
+
 
 # -------------------------
 # LetStatement
@@ -632,10 +640,7 @@ def test_let_statement_can_use_existing_variable(interpreter, env):
 # -------------------------
 
 def test_print_statement(capsys, interpreter, env):
-    statement = PrintStatement(
-        expression=NumberLiteral(42, LOC),
-        location=LOC
-    )
+    statement = print_statement(NumberLiteral(42, LOC))
 
     interpreter.execute_statement(statement, env)
 
@@ -645,9 +650,8 @@ def test_print_statement(capsys, interpreter, env):
 def test_print_statement_prints_identifier(capsys, interpreter, env):
     env.define("x", 25, LOC)
 
-    statement = PrintStatement(
-        expression=Identifier("x", LOC),
-        location=LOC
+    statement = print_statement(
+        expression=Identifier("x", LOC)
     )
 
     interpreter.execute_statement(statement, env)
@@ -662,8 +666,8 @@ def test_print_statement_prints_identifier(capsys, interpreter, env):
 def test_block_statement_executes_all_statements(capsys, interpreter, env):
     block = BlockStatement(
         statements=[
-            PrintStatement(NumberLiteral(10, LOC), LOC),
-            PrintStatement(NumberLiteral(20, LOC), LOC),
+            print_statement(NumberLiteral(10, LOC)),
+            print_statement(NumberLiteral(20, LOC))
         ],
         location=LOC
     )
@@ -678,7 +682,7 @@ def test_block_can_access_parent_variables(capsys, interpreter, env):
 
     block = BlockStatement(
         statements=[
-            PrintStatement(Identifier("x", LOC), LOC)
+            print_statement(Identifier("x", LOC))
         ],
         location=LOC
     )
@@ -712,7 +716,7 @@ def test_block_can_shadow_parent_variable(capsys, interpreter, env):
     block = BlockStatement(
         statements=[
             LetStatement("x", NumberLiteral(20, LOC), LOC),
-            PrintStatement(Identifier("x", LOC), LOC)
+            print_statement(Identifier("x", LOC))
         ],
         location=LOC
     )
@@ -731,7 +735,7 @@ def test_if_true_executes_then_branch(capsys, interpreter, env):
     statement = IfStatement(
         condition=BooleanLiteral(True, LOC),
         then_branch=BlockStatement(
-            [PrintStatement(NumberLiteral(1, LOC), LOC)],
+            [print_statement(NumberLiteral(1, LOC))],
             LOC
         ),
         location=LOC
@@ -746,12 +750,12 @@ def test_if_false_executes_else_branch(capsys, interpreter, env):
     statement = IfStatement(
         condition=BooleanLiteral(False, LOC),
         then_branch=BlockStatement(
-            [PrintStatement(NumberLiteral(1, LOC), LOC)],
+            [print_statement(NumberLiteral(1, LOC))],
             LOC
         ),
         location=LOC,
         else_branch=BlockStatement(
-            [PrintStatement(NumberLiteral(2, LOC), LOC)],
+            [print_statement(NumberLiteral(2, LOC))],
             LOC
         )
     )
@@ -765,7 +769,7 @@ def test_if_false_without_else_does_nothing(capsys, interpreter, env):
     statement = IfStatement(
         condition=BooleanLiteral(False, LOC),
         then_branch=BlockStatement(
-            [PrintStatement(NumberLiteral(1, LOC), LOC)],
+            [print_statement(NumberLiteral(1, LOC))],
             LOC
         ),
         location=LOC
@@ -816,7 +820,7 @@ def test_if_can_read_parent_variables(capsys, interpreter, env):
         condition=BooleanLiteral(True, LOC),
         then_branch=BlockStatement(
             [
-                PrintStatement(Identifier("x", LOC), LOC)
+                print_statement(Identifier("x", LOC))
             ],
             LOC
         ),
@@ -834,9 +838,9 @@ def test_if_can_read_parent_variables(capsys, interpreter, env):
 def test_execute_program_executes_all_statements(capsys, interpreter, env):
     program = Program(
         statements=[
-            PrintStatement(NumberLiteral(10, LOC), LOC),
-            PrintStatement(NumberLiteral(20, LOC), LOC),
-            PrintStatement(NumberLiteral(30, LOC), LOC),
+            print_statement(NumberLiteral(10, LOC)),
+            print_statement(NumberLiteral(20, LOC)),
+            print_statement(NumberLiteral(30, LOC)),
         ]
     )
 
@@ -859,7 +863,7 @@ def test_execute_program_preserves_statement_order(capsys, interpreter, env):
                 ),
                 LOC
             ),
-            PrintStatement(Identifier("y", LOC), LOC),
+            print_statement(Identifier("y", LOC)),
         ]
     )
 
@@ -885,9 +889,9 @@ def test_execute_program_uses_shared_environment(interpreter, env):
 def test_execute_program_stops_after_runtime_error(capsys, interpreter, env):
     program = Program(
         statements=[
-            PrintStatement(NumberLiteral(10, LOC), LOC),
-            PrintStatement(Identifier("undefined", LOC), LOC),
-            PrintStatement(NumberLiteral(30, LOC), LOC),
+            print_statement(NumberLiteral(10, LOC)),
+            print_statement(Identifier("undefined", LOC)),
+            print_statement(NumberLiteral(30, LOC)),
         ]
     )
 
@@ -1117,6 +1121,10 @@ def test_index_empty_string(interpreter, env):
 
     assert "Iterable dosen't have any items." in str(exc.value)
 
+# -------------------------
+# Function Call
+# -------------------------
+
 def test_execute_call_expression(interpreter, env):
     expr = CallExpression(
         callee=Identifier("len", LOC),
@@ -1126,19 +1134,73 @@ def test_execute_call_expression(interpreter, env):
 
     assert interpreter.execute_call_expression(expr, env) == 3
 
-def test_execute_call_expression_unknown_function(interpreter, env):
+
+def test_len_string(interpreter, env):
+    expr = CallExpression(
+        callee=Identifier("len", LOC),
+        arguments=[string("Taha")],
+        location=LOC
+    )
+
+    assert interpreter.execute_call_expression(expr, env) == 4
+
+
+def test_len_empty_list(interpreter, env):
+    expr = CallExpression(
+        callee=Identifier("len", LOC),
+        arguments=[list([])],
+        location=LOC
+    )
+
+    assert interpreter.execute_call_expression(expr, env) == 0
+
+
+def test_len_empty_string(interpreter, env):
+    expr = CallExpression(
+        callee=Identifier("len", LOC),
+        arguments=[string("")],
+        location=LOC
+    )
+
+    assert interpreter.execute_call_expression(expr, env) == 0
+
+
+def test_len_invalid_type(interpreter, env):
+    expr = CallExpression(
+        callee=Identifier("len", LOC),
+        arguments=[number(10)],
+        location=LOC
+    )
+
+    with pytest.raises(TahaRuntimeError):
+        interpreter.execute_call_expression(expr, env)
+
+
+def test_unknown_function(interpreter, env):
     expr = CallExpression(
         callee=Identifier("unknown_function", LOC),
-        arguments=[],
+        arguments=[number(10)],
         location=LOC
     )
 
     with pytest.raises(TahaRuntimeError):
         interpreter.execute_call_expression(expr, env)
 
-def test_execute_call_expression_invalid_function_callee(interpreter, env):
+
+def test_invalid_function_callee(interpreter, env):
     expr = CallExpression(
         callee=number(2),
+        arguments=[number(10)],
+        location=LOC
+    )
+
+    with pytest.raises(TahaRuntimeError):
+        interpreter.execute_call_expression(expr, env)
+
+
+def test_invalid_function_argument_count(interpreter, env):
+    expr = CallExpression(
+        callee=Identifier("len", LOC),
         arguments=[],
         location=LOC
     )
@@ -1146,40 +1208,20 @@ def test_execute_call_expression_invalid_function_callee(interpreter, env):
     with pytest.raises(TahaRuntimeError):
         interpreter.execute_call_expression(expr, env)
 
-def sumer(a, b):
-    return a + b
 
-def test_execute_call_expression_executes_arguments(interpreter, env):
-    expr = CallExpression(
-        callee=Identifier("sum", LOC),
-        arguments=[
-            binary(number(8), TokenType.STAR, number(3)),
-            number(8)
-        ],
-        location=LOC
-    )
+def test_call_statement(capsys, interpreter, env):
+    statement = print_statement(NumberLiteral(42, LOC))
 
-    assert interpreter.execute_call_expression(expr, env) == 32
+    interpreter.execute_statement(statement, env)
 
-def test_execute_call_expression_accepts_multiple_arguments(interpreter, env):
-    expr = CallExpression(
-        callee=Identifier("sum", LOC),
-        arguments=[
-            number(1),
-            number(8),
-            number(2),
-            number(9),
-        ],
-        location=LOC
-    )
+    assert capsys.readouterr().out == "42\n"
 
-    assert interpreter.execute_call_expression(expr, env) == 20
 
-def test_execute_call_expression_accepts_non_argument_functions(interpreter, env):
-    expr = CallExpression(
-        callee=Identifier("print", LOC),
-        arguments=[],
-        location=LOC
-    )
+def test_call_statement_with_identifier(capsys, interpreter, env):
+    env.define("x", 25, LOC)
 
-    assert interpreter.execute_call_expression(expr, env) == None
+    statement = print_statement(Identifier("x", LOC))
+
+    interpreter.execute_statement(statement, env)
+
+    assert capsys.readouterr().out == "25\n"
