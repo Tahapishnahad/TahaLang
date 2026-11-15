@@ -37,6 +37,12 @@ class IfStatement(Statement):
     else_branch: BlockStatement | None = None
 
 @dataclass
+class AssignmentStatement(Statement):
+    name: str
+    value: Expression
+    location: SourceLocation
+
+@dataclass
 class NumberLiteral(Expression):
     value: int | float
     location: SourceLocation

@@ -107,6 +107,15 @@ class TahaRuntimeError(TahaLangError):
     @classmethod
     def undefined_variable(cls, line, column, name):
         return cls(f"Undefined variable {name!r}", line, column)
+    
+
+    @classmethod
+    def undefined_variable_assignment(cls, line, column, name):
+        return cls(f"Undefined variable {name!r} for assigning value.", line, column)
+
+    @classmethod
+    def invalid_assignment_value_type(cls, line, column, got, expected):
+        return cls(f"Can't assign {got} to {expected}.", line, column)
 
 
     @classmethod

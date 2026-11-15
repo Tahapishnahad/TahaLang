@@ -20,7 +20,8 @@ from ast_nodes import (
     ListExpression,
     IndexExpression,
     CallExpression,
-    CallStatement
+    CallStatement,
+    AssignmentStatement
 )
 from tokens import TokenType
 
@@ -271,7 +272,8 @@ def test_unary_operator_without_operand_is_invalid(source):
         "print(2",
         "print 2)",
         "let a = 3 abc",
-    ],
+        "a = "
+    ]
 )
 def test_invalid_syntax_raises_error(source):
     with pytest.raises(TahaSyntaxError):
@@ -1277,3 +1279,33 @@ def test_nested_call_expression():
 def test_invalid_function_call(source):
     with pytest.raises(TahaSyntaxError):
         parse_expression(source)
+
+
+def test_parse_assignment():
+    source = parse_source("a = 9")
+    assignment = source.statements[0]
+
+    assert isinstance(assignment, AssignmentStatement)
+    assert isinstance(assignment.value, NumberLiteral)
+
+    assert assignment.location == SourceLocation(1, 1)
+    assert assignment.value.location == SourceLocation(1, 5)
+
+    assert assignment.name == "a"
+
+    assert assignment.value.value == 9
+
+def test_parse_assignment_with_binarsy_expression():
+    source = parse_source("age = 9 + 10")
+    assignment = source.statements[0]
+
+    assert isinstance(assignment, AssignmentStatement)
+    assert isinstance(assignment.value, BinaryExpression)
+
+    assert assignment.location == SourceLocation(1, 1)
+    assert assignment.value.location == SourceLocation(1, 7)
+
+    assert assignment.name == "age"
+
+    assert assignment.value.left.value == 9
+    assert assignment.value.right.value == 10

@@ -16,27 +16,29 @@ from ast_nodes import (
     ListExpression,
     IndexExpression,
     CallExpression,
-    CallStatement
+    CallStatement,
+    AssignmentStatement
 )
 
+LOC = SourceLocation(1, 1)
 
 def test_program_stores_statements():
     statement = Identifier(
         name="print",
-        location=SourceLocation(1, 2)
+        location=LOC
     )
 
     program = Program(statements=[statement])
 
     assert len(program.statements) == 1
     assert program.statements[0] is statement
-    assert statement.location == SourceLocation(1, 2)
+    assert statement.location == LOC
 
 
 def test_let_statement():
     value = NumberLiteral(
         value=13,
-        location=SourceLocation(2, 6)
+        location=LOC
     )
     statement = LetStatement(
         name="age",
@@ -413,7 +415,7 @@ def test_call_expression_without_arguments():
 
     assert expression.arguments == []
 
-# -------------------------
+# -------------=------------
 # CallStatement
 # -------------------------
 
@@ -452,3 +454,16 @@ def test_call_statement_with_no_arguments():
     statement = CallStatement(call=call)
 
     assert statement.call.arguments == []
+
+def test_assignment_statement():
+    assignment = AssignmentStatement(
+        "age",
+        value=NumberLiteral(17, LOC),
+        location=LOC
+    )
+
+    assert assignment.name == "age"
+    assert isinstance(assignment.value, NumberLiteral)
+    assert assignment.value.value == 17
+    assert assignment.value.location == LOC
+    assert assignment.location == LOC

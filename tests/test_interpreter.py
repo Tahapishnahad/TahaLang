@@ -182,7 +182,96 @@ def test_exists_with_parent():
     assert env.exists("num")
     assert not env.exists("undefined")
 
+def test_assign():
+    env = Environment()
+    env.define(
+        name="age",
+        value=7,
+        source_location=LOC
+    )
+    env.assign(
+        name="age",
+        value=9,
+        location=LOC
+    )
 
+    assert env.exists("age")
+    assert env.get("age", LOC) == 9
+
+def test_chained_assignments():
+    env = Environment()
+    env.define(
+        name="age",
+        value=7,
+        source_location=LOC
+    )
+
+    env.assign(
+        name="age",
+        value=9,
+        location=LOC
+    )
+
+    env.assign(
+        name="age",
+        value=11,
+        location=LOC
+    )
+    
+    assert env.exists("age")
+    assert env.get("age", LOC) == 11
+
+def test_assign_raises_error_in_unexpected_case():
+    env = Environment()
+
+    with pytest.raises(TahaRuntimeError):
+        env.assign(
+            name="undefined",
+            value=10,
+            location=LOC
+        )
+
+def test_assign_with_nested_envs():
+    env = Environment()
+    env.define(
+        name="x",
+        value=9,
+        source_location=LOC
+    )
+
+    child = Environment(env)
+
+    child.assign(
+        name="x",
+        value=10,
+        location=LOC
+    )
+
+    assert env.get("x", LOC) == 10
+
+def test_assign_with_nested_envs_with_existing_variable_in_both():
+    env = Environment()
+    env.define(
+        name="x",
+        value=10,
+        source_location=LOC
+    )
+
+    child = Environment(env)
+    child.define(
+        name="x",
+        value=20,
+        source_location=LOC
+    )
+
+    child.assign(
+        name="x",
+        value=30,
+        location=LOC
+    )
+
+    assert env.get("x", LOC) == 10
+    assert child.get("x", LOC) == 30
 
 # -------------------------
 # Helpers
@@ -263,6 +352,14 @@ def call(callee, arguments):
         CallExpression,
         callee=callee,
         arguments=arguments,
+        location=make_location()
+    )
+
+def assign_statement(name, value, env):
+    return make_node(
+        AssignmentStatement,
+        name=name,
+        value=value,
         location=make_location()
     )
 
@@ -1225,3 +1322,107 @@ def test_call_statement_with_identifier(capsys, interpreter, env):
     interpreter.execute_statement(statement, env)
 
     assert capsys.readouterr().out == "25\n"
+
+def test_assignment_statement(interpreter, env: Environment):
+    env.define(
+        "x", 92, LOC
+    )
+
+    statement = assign_statement(
+        name="x",
+        value=number(100),
+        env=env
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert env.get("x", LOC) == 100
+
+def test_assignment_statement_with_binary_assign_value(interpreter, env: Environment):
+    env.define(
+        "x", 92, LOC
+    )
+
+    statement = assign_statement(
+        name="x",
+        value=binary(number(10), TokenType.PLUS, number(30)),
+        env=env
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert env.get("x", LOC) == 40
+
+def test_assignment_statement_from_child_env_to_parent(interpreter, env: Environment):
+    env.define(
+        "x", 92, LOC
+    )
+
+    child = Environment(env)
+
+    statement = assign_statement(
+        name="x",
+        value=number(100),
+        env=child
+    )
+
+    interpreter.execute_statement(statement, child)
+
+    assert env.get("x", LOC) == 100
+
+def test_assignment_statement_with_undefined_variable(interpreter, env: Environment):
+    env.define(
+        "x", 92, LOC
+    )
+
+    statement = assign_statement(
+        name="undefined",
+        value=number(100),
+        env=env
+    )
+
+    with pytest.raises(TahaRuntimeError) as exc:
+        interpreter.execute_statement(statement, env)
+
+    assert exc.value.message == "Undefined variable 'undefined' for assigning value."
+
+def test_assignment_statement_with_invalid_type(interpreter, env: Environment):
+    env.define(
+        "x", 92, LOC
+    )
+
+    statement = assign_statement(
+        name="x",
+        value=string("Invalid Type"),
+        env=env
+    )
+
+    with pytest.raises(TahaRuntimeError) as exc:
+        interpreter.execute_statement(statement, env)
+
+    assert exc.value.message == "Can't assign str to int."
+    assert env.get("x", LOC) == 92
+
+def test_assignment_statement_from_child_environment(interpreter, env: Environment):
+    env.define(
+        "x", 92, LOC
+    )
+
+    child = Environment(env)
+
+    child.define(
+        "x", 50, LOC
+    )
+
+    statement = assign_statement(
+        name="x",
+        value=number(100),
+        env=child
+    )
+
+    interpreter.execute_statement(statement, child)
+
+    assert env.get("x", LOC) == 92
+    assert child.get("x", LOC) == 100
+
+    

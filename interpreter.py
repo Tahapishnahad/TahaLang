@@ -51,6 +51,23 @@ class Environment:
 
         return False
 
+    def assign(self, name: str, value: object, location: SourceLocation):
+        current_env = self
+
+        while current_env is not None:
+            if name in current_env.variables:
+                current_env.variables[name] = value
+                return
+
+            current_env = current_env.parent
+
+        raise TahaRuntimeError.undefined_variable_assignment(
+            line=location.line,
+            column=location.column,
+            name=name
+        )
+        
+
 
 class Interpreter:
 
@@ -297,6 +314,12 @@ class Interpreter:
                 env=env
             )
 
+        elif isinstance(statement, AssignmentStatement):
+            self.execute_assignment_statement(
+                statement=statement,
+                env=env
+            )
+
     def execute_call_statement(self, statement: CallStatement, env: Environment):
         self.execute_call_expression(
             expr=statement.call,
@@ -368,7 +391,36 @@ class Interpreter:
             args.append((value, argument.location))
         
         return func(*args[0])
-   
+
+    def execute_assignment_statement(
+        self,
+        statement: AssignmentStatement,
+        env: Environment
+            ):
+
+        if not env.exists(statement.name):
+            raise TahaRuntimeError.undefined_variable_assignment(
+                line=statement.location.line,
+                column=statement.location.column,
+                name=statement.name
+            )   
+
+        value = self.execute_expression(statement.value, env)
+        variable = env.get(statement.name, statement.location)
+
+        if type(value) != type(variable):
+            raise TahaRuntimeError.invalid_assignment_value_type(
+                line=statement.value.location.line,
+                column=statement.value.location.column,
+                got=type(value).__name__,
+                expected=type(variable).__name__
+            )
+
+        env.assign(
+            name=statement.name,
+            value=value,
+            location=statement.location
+        )
 
     def is_number(self, value: object) -> bool:
         return type(value) in (int, float)

@@ -19,7 +19,8 @@ from ast_nodes import (
     ListExpression,
     IndexExpression,
     CallExpression,
-    CallStatement
+    CallStatement,
+    AssignmentStatement
 )
 
 
@@ -83,15 +84,12 @@ class Parser:
             case TokenType.IDENTIFIER:
                 expression = self.parse_postfix()
 
-                if not isinstance(expression, CallExpression):
-                    raise TahaSyntaxError.unexpected_token_type(
-                        line=expression.location.line,
-                        column=expression.location.column,
-                        got=type(expression).__name__,
-                        expected=TokenType.IDENTIFIER.name
-                    )
+                if isinstance(expression, CallExpression):
+                    return CallStatement(call=expression)
+                
+                elif isinstance(expression, Identifier):
+                    return self.parse_assignment_statement(expression)
 
-                return CallStatement(call=expression)
 
             case TokenType.IF:
                 return self.parse_if_statement()
@@ -178,6 +176,17 @@ class Parser:
             statements=statements,
             location=location
         )
+
+    def parse_assignment_statement(self, identifier: Identifier):
+        self.consume(TokenType.EQUAL)
+        value_expr = self.parse_expression()
+
+        return AssignmentStatement(
+            name=identifier.name,
+            value=value_expr,
+            location=identifier.location
+        )
+
 
     def parse_expression(self):
         return self.parse_binary_expression(1)
