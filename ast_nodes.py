@@ -43,6 +43,13 @@ class AssignmentStatement(Statement):
     location: SourceLocation
 
 @dataclass
+class CompoundAssignmentStatement(Statement):
+    name: str
+    operator: TokenType
+    value: Expression
+    location: SourceLocation
+
+@dataclass
 class NumberLiteral(Expression):
     value: int | float
     location: SourceLocation

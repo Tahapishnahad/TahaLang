@@ -34,7 +34,12 @@ class TokenType(Enum):
     GREATER_EQUAL = "GREATER_EQUAL" # >=
 
     EQUAL = "EQUAL" # =
-
+    PLUS_EQUAL = "PLUS_EQUAL" # +=
+    MINUS_EQUAL = "MINUS_EQUAL" # -=
+    STAR_EQUAL = "STAR_EQUAL" # *=
+    SLASH_EQUAL = "SLASH_EQUAL" # /=
+    PERCENT_EQUAL = "PERCENT_EQUAL" # %=
+    
     LEFT_PAREN = "LEFT_PAREN" # (
     RIGHT_PAREN = "RIGHT_PAREN" # )
     LEFT_BRACE = "LEFT_BRACE" # {

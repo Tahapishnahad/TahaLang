@@ -363,6 +363,15 @@ def assign_statement(name, value, env):
         location=make_location()
     )
 
+def compound_assign_statement(name, value, operator):
+    return make_node(
+        CompoundAssignmentStatement,
+        name=name,
+        value=value,
+        operator=operator,
+        location=make_location()
+    )
+
 @pytest.fixture
 def env():
     return Environment()
@@ -1425,4 +1434,296 @@ def test_assignment_statement_from_child_environment(interpreter, env: Environme
     assert env.get("x", LOC) == 92
     assert child.get("x", LOC) == 100
 
-    
+# -------------------------
+# CompoundAssignmentStatement
+# -------------------------
+
+def test_compound_assignment_plus(interpreter, env):
+    env.define(name="x", value=10, source_location=LOC)
+
+    statement = make_node(
+        CompoundAssignmentStatement,
+        name="x",
+        operator=TokenType.PLUS_EQUAL,
+        value=number(5),
+        location=make_location()
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert env.get("x", LOC) == 15
+
+
+def test_compound_assignment_minus(interpreter, env):
+    env.define(name="x", value=10, source_location=LOC)
+
+    statement = make_node(
+        CompoundAssignmentStatement,
+        name="x",
+        operator=TokenType.MINUS_EQUAL,
+        value=number(5),
+        location=make_location()
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert env.get("x", LOC) == 5
+
+
+def test_compound_assignment_multiply(interpreter, env):
+    env.define(name="x", value=10, source_location=LOC)
+
+    statement = make_node(
+        CompoundAssignmentStatement,
+        name="x",
+        operator=TokenType.STAR_EQUAL,
+        value=number(3),
+        location=make_location()
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert env.get("x", LOC) == 30
+
+
+def test_compound_assignment_divide(interpreter, env):
+    env.define(name="x", value=10, source_location=LOC)
+
+    statement = make_node(
+        CompoundAssignmentStatement,
+        name="x",
+        operator=TokenType.SLASH_EQUAL,
+        value=number(2),
+        location=make_location()
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert env.get("x", LOC) == 5.0
+
+
+def test_compound_assignment_modulo(interpreter, env):
+    env.define(name="x", value=10, source_location=LOC)
+
+    statement = make_node(
+        CompoundAssignmentStatement,
+        name="x",
+        operator=TokenType.PERCENT_EQUAL,
+        value=number(3),
+        location=make_location()
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert env.get("x", LOC) == 1
+
+
+def test_compound_assignment_plus_binary_expression(interpreter, env):
+    env.define(name="x", value=10, source_location=LOC)
+
+    statement = make_node(
+        CompoundAssignmentStatement,
+        name="x",
+        operator=TokenType.PLUS_EQUAL,
+        value=binary(
+            left=number(2),
+            operator=TokenType.STAR,
+            right=number(3)
+        ),
+        location=make_location()
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert env.get("x", LOC) == 16
+
+
+def test_compound_assignment_minus_binary_expression(interpreter, env):
+    env.define(name="x", value=20, source_location=LOC)
+
+    statement = make_node(
+        CompoundAssignmentStatement,
+        name="x",
+        operator=TokenType.MINUS_EQUAL,
+        value=binary(
+            left=number(10),
+            operator=TokenType.SLASH,
+            right=number(2)
+        ),
+        location=make_location()
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert env.get("x", LOC) == 15.0
+
+
+def test_compound_assignment_multiply_binary_expression(interpreter, env):
+    env.define(name="x", value=4, source_location=LOC)
+
+    statement = make_node(
+        CompoundAssignmentStatement,
+        name="x",
+        operator=TokenType.STAR_EQUAL,
+        value=binary(
+            left=number(2),
+            operator=TokenType.PLUS,
+            right=number(3)
+        ),
+        location=make_location()
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert env.get("x", LOC) == 20
+
+def test_compound_assignment_updates_parent_variable(interpreter, env):
+    env.define(name="x", value=10, source_location=LOC)
+
+    child_env = Environment(parent=env)
+
+    statement = make_node(
+        CompoundAssignmentStatement,
+        name="x",
+        operator=TokenType.PLUS_EQUAL,
+        value=number(5),
+        location=make_location()
+    )
+
+    interpreter.execute_statement(statement, child_env)
+
+    assert env.get("x", LOC) == 15
+
+
+def test_compound_assignment_updates_local_shadowed_variable(interpreter, env):
+    env.define(name="x", value=10, source_location=LOC)
+
+    child_env = Environment(parent=env)
+    child_env.define(name="x", value=20, source_location=LOC)
+
+    statement = make_node(
+        CompoundAssignmentStatement,
+        name="x",
+        operator=TokenType.PLUS_EQUAL,
+        value=number(5),
+        location=make_location()
+    )
+
+    interpreter.execute_statement(statement, child_env)
+
+    assert child_env.get("x", LOC) == 25
+    assert env.get("x", LOC) == 10
+
+
+def test_compound_assignment_without_local_shadow_updates_parent(interpreter, env):
+    env.define(name="x", value=10, source_location=LOC)
+
+    child_env = Environment(parent=env)
+
+    statement = make_node(
+        CompoundAssignmentStatement,
+        name="x",
+        operator=TokenType.STAR_EQUAL,
+        value=number(3),
+        location=make_location()
+    )
+
+    interpreter.execute_statement(statement, child_env)
+
+    assert env.get("x", LOC) == 30
+
+def test_compound_assignment_undefined_variable(interpreter, env):
+    statement = make_node(
+        CompoundAssignmentStatement,
+        name="unknown",
+        operator=TokenType.PLUS_EQUAL,
+        value=number(5),
+        location=make_location()
+    )
+
+    with pytest.raises(TahaRuntimeError):
+        interpreter.execute_statement(statement, env)
+
+
+def test_compound_assignment_invalid_value_type(interpreter, env):
+    env.define(name="x", value=10, source_location=LOC)
+
+    statement = make_node(
+        CompoundAssignmentStatement,
+        name="x",
+        operator=TokenType.PLUS_EQUAL,
+        value=string("hello"),
+        location=make_location()
+    )
+
+    with pytest.raises(TahaRuntimeError):
+        interpreter.execute_statement(statement, env)
+
+
+def test_compound_assignment_division_by_zero(interpreter, env):
+    env.define(name="x", value=10, source_location=LOC)
+
+    statement = make_node(
+        CompoundAssignmentStatement,
+        name="x",
+        operator=TokenType.SLASH_EQUAL,
+        value=number(0),
+        location=make_location()
+    )
+
+    with pytest.raises(TahaRuntimeError):
+        interpreter.execute_statement(statement, env)
+
+
+def test_compound_assignment_modulo_by_zero(interpreter, env):
+    env.define(name="x", value=10, source_location=LOC)
+
+    statement = make_node(
+        CompoundAssignmentStatement,
+        name="x",
+        operator=TokenType.PERCENT_EQUAL,
+        value=number(0),
+        location=make_location()
+    )
+
+    with pytest.raises(TahaRuntimeError):
+        interpreter.execute_statement(statement, env)
+
+def test_compound_assignment_multiple_operations(interpreter, env):
+    env.define(name="score", value=10, source_location=LOC)
+
+    statements = [
+        make_node(
+            CompoundAssignmentStatement,
+            name="score",
+            operator=TokenType.PLUS_EQUAL,
+            value=number(5),
+            location=make_location()
+        ),
+        make_node(
+            CompoundAssignmentStatement,
+            name="score",
+            operator=TokenType.STAR_EQUAL,
+            value=number(2),
+            location=make_location()
+        ),
+        make_node(
+            CompoundAssignmentStatement,
+            name="score",
+            operator=TokenType.MINUS_EQUAL,
+            value=number(4),
+            location=make_location()
+        ),
+        make_node(
+            CompoundAssignmentStatement,
+            name="score",
+            operator=TokenType.SLASH_EQUAL,
+            value=number(2),
+            location=make_location()
+        )
+    ]
+
+    for statement in statements:
+        interpreter.execute_statement(statement, env)
+
+    assert env.get("score", LOC) == 13.0

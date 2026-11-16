@@ -6,6 +6,7 @@ from errors import TahaSyntaxError
 from ast_nodes import (
     Program,
     Statement,
+    Expression,
     SourceLocation,
     LetStatement,
     BlockStatement,
@@ -20,7 +21,8 @@ from ast_nodes import (
     IndexExpression,
     CallExpression,
     CallStatement,
-    AssignmentStatement
+    AssignmentStatement,
+    CompoundAssignmentStatement
 )
 
 
@@ -46,6 +48,13 @@ PRECEDENCE = {
     TokenType.PERCENT: 4,
 }
 
+COMPOUND_OPERATOR = {
+    TokenType.PLUS_EQUAL,
+    TokenType.MINUS_EQUAL,
+    TokenType.STAR_EQUAL,
+    TokenType.SLASH_EQUAL,
+    TokenType.PERCENT_EQUAL
+}
 
 class Parser:
     def __init__(self, tokens):
@@ -178,11 +187,37 @@ class Parser:
         )
 
     def parse_assignment_statement(self, identifier: Identifier):
-        self.consume(TokenType.EQUAL)
+        operator = self.advance()
+
+        if operator.type == TokenType.EQUAL:
+            value_expr = self.parse_expression()
+            return AssignmentStatement(
+                name=identifier.name,
+                value=value_expr,
+                location=identifier.location
+            )
+        
+        elif operator.type in COMPOUND_OPERATOR:
+            return self.parse_compound_assignment_statement(
+                identifier=identifier,
+                token_type=operator.type
+            )
+        else:
+            raise TahaSyntaxError.unexpected_token_type(
+                line=operator.line,
+                column=operator.column,
+                expected="EQUAL, PLUS_EQUAL, MINUS_EQUAL, STAR_EQUAL, SLASH_EQUAL, PERCENT_EQUAL",
+                got=operator.type.name
+            )
+
+
+    def parse_compound_assignment_statement(self, identifier: Identifier, token_type: TokenType):
+
         value_expr = self.parse_expression()
 
-        return AssignmentStatement(
+        return CompoundAssignmentStatement(
             name=identifier.name,
+            operator=token_type,
             value=value_expr,
             location=identifier.location
         )

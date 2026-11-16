@@ -21,7 +21,8 @@ from ast_nodes import (
     IndexExpression,
     CallExpression,
     CallStatement,
-    AssignmentStatement
+    AssignmentStatement,
+    CompoundAssignmentStatement
 )
 from tokens import TokenType
 
@@ -272,7 +273,12 @@ def test_unary_operator_without_operand_is_invalid(source):
         "print(2",
         "print 2)",
         "let a = 3 abc",
-        "a = "
+        "a = ",
+        "a += ",
+        "a -= ",
+        "a *= ",
+        "a /= ",
+        "a %= "
     ]
 )
 def test_invalid_syntax_raises_error(source):
@@ -1309,3 +1315,71 @@ def test_parse_assignment_with_binarsy_expression():
 
     assert assignment.value.left.value == 9
     assert assignment.value.right.value == 10
+
+def test_parse_compound_assignment_plus_equal():
+    source = parse_source("a += 9")
+    assignment = source.statements[0]
+
+    assert isinstance(assignment, CompoundAssignmentStatement)
+    assert isinstance(assignment.value, NumberLiteral)
+
+    assert assignment.location == SourceLocation(1, 1)
+    assert assignment.value.location == SourceLocation(1, 6)
+
+    assert assignment.operator == TokenType.PLUS_EQUAL
+
+    assert assignment.name == "a"
+
+    assert assignment.value.value == 9
+
+@pytest.mark.parametrize(
+    ("source", "token_type"),
+    [
+        ("a += 9", TokenType.PLUS_EQUAL),
+        ("a -= 9", TokenType.MINUS_EQUAL),
+        ("a *= 9", TokenType.STAR_EQUAL),
+        ("a /= 9", TokenType.SLASH_EQUAL),
+        ("a %= 9", TokenType.PERCENT_EQUAL)
+    ]
+)
+def test_parse_compound_assignment_numbers(source, token_type):
+    source = parse_source(source)
+    assignment = source.statements[0]
+
+    assert isinstance(assignment, CompoundAssignmentStatement)
+    assert isinstance(assignment.value, NumberLiteral)
+
+    assert assignment.location == SourceLocation(1, 1)
+    assert assignment.value.location == SourceLocation(1, 6)
+
+    assert assignment.operator == token_type
+
+    assert assignment.name == "a"
+
+    assert assignment.value.value == 9
+
+@pytest.mark.parametrize(
+    ("source", "token_type"),
+    [
+        ('a += "string"', TokenType.PLUS_EQUAL),
+        ('a -= "string"', TokenType.MINUS_EQUAL),
+        ('a *= "string"', TokenType.STAR_EQUAL),
+        ('a /= "string"', TokenType.SLASH_EQUAL),
+        ('a %= "string"', TokenType.PERCENT_EQUAL)
+    ]
+)
+def test_parse_compound_assignment_strings(source, token_type):
+    source = parse_source(source)
+    assignment = source.statements[0]
+
+    assert isinstance(assignment, CompoundAssignmentStatement)
+    assert isinstance(assignment.value, StringLiteral)
+
+    assert assignment.location == SourceLocation(1, 1)
+    assert assignment.value.location == SourceLocation(1, 6)
+
+    assert assignment.operator == token_type
+
+    assert assignment.name == "a"
+
+    assert assignment.value.value == "string"

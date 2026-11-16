@@ -4,11 +4,6 @@ from tokens import Token, TokenType
 from errors import LexicalError
 
 SINGLE_CHAR_TOKENS = {
-    "+": TokenType.PLUS,
-    "-": TokenType.MINUS,
-    "*": TokenType.STAR,
-    "/": TokenType.SLASH,
-    "%": TokenType.PERCENT,
     "(": TokenType.LEFT_PAREN,
     ")": TokenType.RIGHT_PAREN,
     "{": TokenType.LEFT_BRACE,
@@ -18,7 +13,7 @@ SINGLE_CHAR_TOKENS = {
     ",": TokenType.COMMA
 }
 
-COMPOUND_OPERATOR_STARTS = {"=", "<", ">", "!"}
+COMPOUND_OPERATOR_STARTS = {"=", "<", ">", "!", "+", "-", "*", "/", "%"}
 
 KEYWORDS = {
     "let": TokenType.LET,
@@ -135,6 +130,35 @@ class Lexer:
                     else:
                         self.scan_token(TokenType.BANG, "!")
 
+                case "+":
+                    if self.peek_next() == "=":
+                        self.scan_two_tokens(TokenType.PLUS_EQUAL, "+=")
+                    else:
+                        self.scan_token(TokenType.PLUS, "+")
+
+                case "-":
+                    if self.peek_next() == "=":
+                        self.scan_two_tokens(TokenType.MINUS_EQUAL, "-=")
+                    else:
+                        self.scan_token(TokenType.MINUS, "-")
+
+                case "*":
+                    if self.peek_next() == "=":
+                        self.scan_two_tokens(TokenType.STAR_EQUAL, "*=")
+                    else:
+                        self.scan_token(TokenType.STAR, "*")
+
+                case "/":
+                    if self.peek_next() == "=":
+                        self.scan_two_tokens(TokenType.SLASH_EQUAL, "/=")
+                    else:
+                        self.scan_token(TokenType.SLASH, "/")
+
+                case "%":
+                    if self.peek_next() == "=":
+                        self.scan_two_tokens(TokenType.PERCENT_EQUAL, "%=")
+                    else:
+                        self.scan_token(TokenType.PERCENT, "%")
 
     def scan_identifier(self):
         line = self.line

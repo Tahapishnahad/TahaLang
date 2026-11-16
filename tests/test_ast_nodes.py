@@ -17,7 +17,8 @@ from ast_nodes import (
     IndexExpression,
     CallExpression,
     CallStatement,
-    AssignmentStatement
+    AssignmentStatement,
+    CompoundAssignmentStatement
 )
 
 LOC = SourceLocation(1, 1)
@@ -465,5 +466,32 @@ def test_assignment_statement():
     assert assignment.name == "age"
     assert isinstance(assignment.value, NumberLiteral)
     assert assignment.value.value == 17
+    assert assignment.value.location == LOC
+    assert assignment.location == LOC
+
+def test_compound_assignment_statement():
+    assignment = CompoundAssignmentStatement(
+        name="x",
+        operator=TokenType.PLUS_EQUAL,
+        value=NumberLiteral(10, LOC),
+        location=LOC
+    )
+
+    assert assignment.name == "x" 
+    assert assignment.operator.name == "PLUS_EQUAL"
+    assert assignment.value.value == 10
+    assert assignment.value.location == LOC
+    assert assignment.location == LOC
+
+    assignment = CompoundAssignmentStatement(
+        name="name",
+        operator=TokenType.MINUS_EQUAL,
+        value=StringLiteral("string", LOC),
+        location=LOC
+    )
+
+    assert assignment.name == "name" 
+    assert assignment.operator.name == "MINUS_EQUAL"
+    assert assignment.value.value == "string"
     assert assignment.value.location == LOC
     assert assignment.location == LOC

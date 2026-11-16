@@ -477,3 +477,20 @@ def test_list_tokens():
     actual = [(token.type, token.value) for token in tokens[:-1]]
 
     assert actual == expected
+
+def test_all_two_character_assignment_operators():
+    source = "+= -= *= /= %="
+    lexer = Lexer(source)
+    tokens = lexer.scan_tokens()
+
+    expected = [
+        (TokenType.PLUS_EQUAL, "+="),
+        (TokenType.MINUS_EQUAL, "-="),
+        (TokenType.STAR_EQUAL, "*="),
+        (TokenType.SLASH_EQUAL, "/="),
+        (TokenType.PERCENT_EQUAL, "%=")
+    ]
+
+    actual = [(token.type, token.value) for token in tokens[:-1]]
+
+    assert actual == expected

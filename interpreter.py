@@ -320,6 +320,12 @@ class Interpreter:
                 env=env
             )
 
+        elif isinstance(statement, CompoundAssignmentStatement):
+            self.execute_compound_assignment_statement(
+                statement=statement,
+                env=env
+            )
+
     def execute_call_statement(self, statement: CallStatement, env: Environment):
         self.execute_call_expression(
             expr=statement.call,
@@ -396,7 +402,7 @@ class Interpreter:
         self,
         statement: AssignmentStatement,
         env: Environment
-            ):
+    ):
 
         if not env.exists(statement.name):
             raise TahaRuntimeError.undefined_variable_assignment(
@@ -408,7 +414,7 @@ class Interpreter:
         value = self.execute_expression(statement.value, env)
         variable = env.get(statement.name, statement.location)
 
-        if type(value) != type(variable):
+        if not self.is_compatible_type(value, variable):
             raise TahaRuntimeError.invalid_assignment_value_type(
                 line=statement.value.location.line,
                 column=statement.value.location.column,
@@ -422,6 +428,122 @@ class Interpreter:
             location=statement.location
         )
 
+    def execute_compound_assignment_statement(
+        self,
+        statement: CompoundAssignmentStatement,
+        env: Environment
+    ):
+        if not env.exists(statement.name):
+            raise TahaRuntimeError.undefined_variable_assignment(
+                line=statement.location.line,
+                column=statement.location.column,
+                name=statement.name
+            )   
+
+        value = self.execute_expression(statement.value, env)
+        variable = env.get(statement.name, statement.location)
+
+        operator = statement.operator
+
+        result = self.get_compound_assignment_value(
+                variable=variable,
+                value=value,
+                operator=operator,
+                location=statement.location
+        )
+
+        if not self.is_compatible_type(result, variable):
+            raise TahaRuntimeError.invalid_assignment_value_type(
+                line=statement.value.location.line,
+                column=statement.value.location.column,
+                got=type(result).__name__,
+                expected=type(variable).__name__
+            )
+
+        env.assign(
+            name=statement.name,
+            value=result,
+            location=statement.location
+        )
+
+    def get_compound_assignment_value(
+            self, 
+            variable: object, 
+            value: object, 
+            operator: TokenType,
+            location: SourceLocation
+        ) -> object:
+
+        match operator:
+            case TokenType.PLUS_EQUAL:
+                if not self.can_compare_order(value, variable):
+                    raise TahaRuntimeError.type_error(
+                        message="PLUS can only apply to two numbers or two strings.",
+                        line=location.line,
+                        column=location.column
+                    )
+                
+                return variable + value
+
+            case TokenType.MINUS_EQUAL:
+                if not (self.is_number(value) and self.is_number(variable)):
+                    raise TahaRuntimeError.type_error(
+                        message="MINUS can only apply to two numbers.",
+                        line=location.line,
+                        column=location.column
+                    )
+                
+                return variable - value
+
+            case TokenType.STAR_EQUAL:
+                if not (self.is_number(value) and self.is_number(variable)):
+                  raise TahaRuntimeError.type_error(
+                        message="STAR can only apply to two numbers.",
+                        line=location.line,
+                        column=location.column
+                    )
+                return variable * value
+
+            case TokenType.SLASH_EQUAL:
+                if not (self.is_number(value) and self.is_number(variable)):
+                    raise TahaRuntimeError.type_error(
+                        message="SLASH can only apply to two numbers.",
+                        line=location.line,
+                        column=location.column
+                    )
+                
+                if value == 0:
+                    raise TahaRuntimeError.division_by_zero(
+                        line=location.line,
+                        column=location.column
+                    )
+                
+                return variable / value
+
+            case TokenType.PERCENT_EQUAL:
+                if not (self.is_number(value) and self.is_number(variable)):
+                    raise TahaRuntimeError.type_error(
+                        message="PERCENT can only apply to two numbers.",
+                        line=location.line,
+                        column=location.column
+                    )
+                
+                if value == 0:
+                    raise TahaRuntimeError.division_by_zero(
+                        line=location.line,
+                        column=location.column
+                    )
+
+                return variable % value
+
+            case _:
+                raise TahaRuntimeError.type_error(
+                    message="Invalid operator for assignment",
+                    line=location.line,
+                    column=location.column
+                )
+        
+
     def is_number(self, value: object) -> bool:
         return type(value) in (int, float)
 
@@ -433,6 +555,12 @@ class Interpreter:
             return True
 
         return  False
+
+    def is_compatible_type(self, old_value, new_value):
+        if self.is_number(old_value) and self.is_number(new_value):
+            return True
+
+        return type(old_value) == type(new_value)
 
     def are_equal(self, left: object, right: object) -> bool:
         if (
