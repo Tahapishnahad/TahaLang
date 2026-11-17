@@ -93,6 +93,7 @@ TahaLang/
 ├── ast_nodes.py
 ├── tokens.py
 ├── errors.py
+├── taha_builtins.py
 │
 ├── tests/
 │   ├── test_lexer.py
@@ -101,8 +102,10 @@ TahaLang/
 │   ├── test_interpreter.py
 │   ├── test_errors.py
 │   └── test_main.py
+│   └── taha_builtins.py
 │
 └── README.md
+└── LICENSE
 ```
 
 *The structure above illustrates the main components; individual test filenames may vary.*
@@ -210,6 +213,33 @@ print(age >= 18)
 print(age == 18)
 ```
 
+### Assignment Operators
+
+Supported assignment operators include:
+
+```text
+=
++=
+-=
+*=
+/=
+%=
+```
+
+Example:
+
+```taha
+let age = 18
+let name = "Sarah"
+
+age += 10
+name += " Jane"
+age *= 2
+
+```
+
+Note: TahaLang can assign float and int to each other
+
 ### Unary Operators
 
 TahaLang supports unary operators:
@@ -250,6 +280,35 @@ if (True) {
 }
 
 print(value)
+```
+
+### Lists and Index Locating
+
+TahaLang supportes listes.
+
+Defining a list:
+```taha
+let list = [1, 2, 3]
+```
+
+Getting list element:
+```taha
+list[0]
+list[1]
+"StringString"[4]
+```
+
+A list can contain different types.
+TahaLang has zero-based indexes.
+
+### Builtins
+
+TahaLang has built-in functions:
+
+```taha
+print("Something")
+len([1, 2, 3])
+
 ```
 
 ## Error Handling
@@ -304,6 +363,7 @@ The initial release includes:
 - Variable and environment management
 - Expression evaluation
 - Statement and conditional execution
+- Assignment to variables
 - Nested block scopes
 - Structured error handling
 - Command-line execution
@@ -318,8 +378,7 @@ Potential directions for future versions include:
 - Expanded standard functionality
 - More comprehensive language tests
 - Further interpreter optimizations
-
-These are possible future improvements, not features promised by version 1.0.0.
+- Adding Functions and Loops(for - while)
 
 ## Author
 
@@ -340,5 +399,5 @@ The project architecture, implementation decisions, and final development work w
 <p align="center">
   <strong>TahaLang 1.0.0</strong>
   <br>
-  Built from scratch with Python.
+  Built from scratch with Python. No Framework
 </p>
