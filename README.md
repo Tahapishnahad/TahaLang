@@ -333,8 +333,6 @@ This project was designed and implemented by **Taha Pishnahad**.
 
 AI assistance was used during development for technical discussions, code reviews, debugging guidance, and assistance with writing some of the automated tests.
 
-**The README documentation was written by ChatGPT (OpenAI), and some of the project's tests were developed with ChatGPT's assistance.**
-
 The project architecture, implementation decisions, and final development work were directed and carried out by the author.
 
 ---
