@@ -164,8 +164,8 @@ Hello, TahaLang!
 Declare variables using `let`:
 
 ```taha
-let age = 13
-let name = "Taha"
+let age = 18
+let name = "Jack"
 let is_programmer = True
 
 print(name)
