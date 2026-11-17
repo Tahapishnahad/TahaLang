@@ -248,7 +248,7 @@ TahaLang supports unary operators:
 let number = 10
 
 print(-number)
-print(!true)
+print(!True)
 ```
 
 ### Conditional Statements
