@@ -314,6 +314,14 @@ def boolean(value):
     )
 
 
+def identifier(name):
+    return make_node(
+        Identifier,
+        name=name,
+        location=make_location()
+    )
+
+
 def binary(left, operator, right):
     return make_node(
         BinaryExpression,
@@ -363,12 +371,36 @@ def assign_statement(name, value, env):
         location=make_location()
     )
 
+def while_statement(condition, body):
+    return make_node(
+        WhileStatement,
+        condition=condition,
+        body=body,
+        location=make_location()
+    )
+
 def compound_assign_statement(name, value, operator):
     return make_node(
         CompoundAssignmentStatement,
         name=name,
         value=value,
         operator=operator,
+        location=make_location()
+    )
+
+def block_statement(statements):
+    return make_node(
+        BlockStatement,
+        statements=statements,
+        location=make_location()
+    )
+
+def if_statement(condition, then_branch, else_branch):
+    return make_node(
+        IfStatement,
+        condition=condition,
+        then_branch=then_branch,
+        else_branch=else_branch,
         location=make_location()
     )
 
@@ -1727,3 +1759,126 @@ def test_compound_assignment_multiple_operations(interpreter, env):
         interpreter.execute_statement(statement, env)
 
     assert env.get("score", LOC) == 13.0
+
+
+def test_while_statament(interpreter, env: Environment):
+    env.define(
+        "x", 0, LOC
+    )
+
+    statement = while_statement(
+        condition=binary(identifier("x"), TokenType.LESS, number(10)),
+        body= block_statement(
+            statements=[
+                compound_assign_statement(
+                    name="x",
+                    operator=TokenType.PLUS_EQUAL,
+                    value=number(1)
+                )
+            ]
+        )
+    )
+
+
+    interpreter.execute_statement(statement, env)
+
+    assert env.get(name="x", source_location=LOC) == 10
+
+def test_while_statament_with_false_value(interpreter, env: Environment):
+    env.define(
+        "x", 0, LOC
+    )
+
+    statement = while_statement(
+        condition=binary(identifier("x"), TokenType.GREATER, number(10)),
+        body= block_statement(
+            statements=[
+                compound_assign_statement(
+                    name="x",
+                    operator=TokenType.PLUS_EQUAL,
+                    value=number(1)
+                )
+            ]
+        )
+    )
+
+
+    interpreter.execute_statement(statement, env)
+
+    assert env.get(name="x", source_location=LOC) == 0
+
+def test_while_statament_with_invalid_condition(interpreter, env: Environment):
+    env.define(
+        "x", 0, LOC
+    )
+
+    statement = while_statement(
+        condition=number(10),
+        body= block_statement(
+            statements=[
+                compound_assign_statement(
+                    name="x",
+                    operator=TokenType.PLUS_EQUAL,
+                    value=number(1)
+                )
+            ]
+        )
+    )
+
+
+    with pytest.raises(TahaRuntimeError) as exc:
+        interpreter.execute_statement(statement, env)
+
+    assert exc.value.message == "While condition must be of type bool, got int"
+
+    assert env.get(name="x", source_location=LOC) == 0
+
+def test_while_statament_with_if_statement(interpreter, env: Environment):
+    env.define(
+        "result", "", LOC
+    )
+
+    env.define(
+        "x", 0, LOC
+    )
+
+    statement = while_statement(
+        condition=binary(identifier("x"), TokenType.LESS, number(10)),
+        body= block_statement(
+            statements=[
+                if_statement(
+                    condition=binary(
+                        left=binary(
+                            left=identifier("x"),
+                            operator=TokenType.PERCENT,
+                            right=number(2)
+                        ),
+                        operator=TokenType.EQUAL_EQUAL,
+                        right=number(0)
+                    ),
+                    then_branch=block_statement(
+                        statements=[
+                            compound_assign_statement(
+                                name="result",
+                                operator=TokenType.PLUS_EQUAL,
+                                value=string(".")
+                            )
+                        ]
+                    ),
+                    else_branch= None
+                ),
+
+                compound_assign_statement(
+                    name="x",
+                    operator=TokenType.PLUS_EQUAL,
+                    value=number(1)
+                )
+            ]
+        )
+    )
+
+
+    interpreter.execute_statement(statement, env)
+
+    assert env.get(name="x", source_location=LOC) == 10
+    assert env.get(name="result", source_location=LOC) == "....."

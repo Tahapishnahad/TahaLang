@@ -54,7 +54,7 @@ class TahaSyntaxError(TahaLangError):
 
     @classmethod
     def expected_primary(cls, line, column, got):
-        return cls(f"Expected INTEGER, FLOAT, STRING, TRUE, FALSE, IDENTIFIER , got: {got}", line, column)
+        return cls(f"Expected INTEGER, FLOAT, STRING, TRUE, FALSE, IDENTIFIER, LIST got: {got}", line, column)
 
 
     @classmethod
@@ -167,3 +167,7 @@ class TahaRuntimeError(TahaLangError):
     @classmethod
     def unexpected_type_for_len_function_argument(cls, line, column, argument_type):
         return cls(f"'len' function argument must be List or Sting. got: {argument_type}", line, column)
+
+    @classmethod
+    def unexpected_while_condition_type(cls, line, column, condition_type):
+        return cls(f"While condition must be of type bool, got {condition_type}", line, column)

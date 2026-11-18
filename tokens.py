@@ -13,6 +13,7 @@ class TokenType(Enum):
     PRINT = "PRINT"
     TRUE = "TRUE"
     FALSE = "FALSE"
+    WHILE = "WHILE"
 
     IDENTIFIER = "IDENTIFIER"
     INTEGER = "INTEGER"

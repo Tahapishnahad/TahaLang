@@ -18,7 +18,8 @@ from ast_nodes import (
     CallExpression,
     CallStatement,
     AssignmentStatement,
-    CompoundAssignmentStatement
+    CompoundAssignmentStatement,
+    WhileStatement
 )
 
 LOC = SourceLocation(1, 1)
@@ -495,3 +496,45 @@ def test_compound_assignment_statement():
     assert assignment.value.value == "string"
     assert assignment.value.location == LOC
     assert assignment.location == LOC
+
+def test_while_statement():
+    statement = WhileStatement(
+        condition=BinaryExpression(
+            left=Identifier("a", LOC),
+            operator=TokenType.EQUAL_EQUAL,
+            right=NumberLiteral(5, LOC),
+            location=LOC
+        ),
+
+        body=BlockStatement(
+            statements=[
+                CallStatement(
+                    CallExpression(
+                        callee="print",
+                        arguments=["Hello"],
+                        location=LOC
+                    )
+                )
+            ],
+            location=LOC
+        ),
+
+        location=LOC
+    )
+
+    assert isinstance(statement, WhileStatement)
+    assert isinstance(statement.condition, BinaryExpression)
+    assert isinstance(statement.body, BlockStatement)
+
+    assert statement.condition.left.name == "a"
+    assert statement.condition.operator == TokenType.EQUAL_EQUAL
+    assert statement.condition.right.value == 5
+
+    assert len(statement.body.statements) == 1
+    assert statement.body.statements[0].call.callee == "print"
+    assert statement.body.statements[0].call.arguments[0] == "Hello"
+
+    assert statement.location == LOC
+    assert statement.condition.location == LOC
+    assert statement.body.location == LOC
+    assert statement.body.statements[0].call.location == LOC

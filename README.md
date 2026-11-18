@@ -28,10 +28,12 @@ Rather than relying on existing interpreter frameworks, its core components were
 ### Language Features
 
 - Variable declarations
-- Integer, string, and boolean literals
+- Integer, string, lists, and boolean literals
 - Arithmetic operations
 - Comparison operators
+- Assignment operators
 - Unary operators
+- While loops
 - Operator precedence
 - Parenthesized expressions
 - Conditional statements (`if` / `else`)
@@ -311,6 +313,19 @@ len([1, 2, 3])
 
 ```
 
+### While loop
+
+TahaLang has while loops:
+
+```taha
+let a = 0
+while (a < 10) {
+  a += 1
+}
+
+print(a)
+```
+
 ## Error Handling
 
 TahaLang provides structured errors for different stages of execution.
@@ -378,7 +393,8 @@ Potential directions for future versions include:
 - Expanded standard functionality
 - More comprehensive language tests
 - Further interpreter optimizations
-- Adding Functions and Loops(for - while)
+- Adding Functions
+- Adding 'for' loop
 
 ## Author
 

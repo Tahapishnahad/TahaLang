@@ -22,7 +22,8 @@ from ast_nodes import (
     CallExpression,
     CallStatement,
     AssignmentStatement,
-    CompoundAssignmentStatement
+    CompoundAssignmentStatement,
+    WhileStatement
 )
 
 
@@ -102,6 +103,9 @@ class Parser:
 
             case TokenType.IF:
                 return self.parse_if_statement()
+
+            case TokenType.WHILE:
+                return self.parse_while_statement()
 
             case _:
                 raise TahaSyntaxError.unexpected_token_type(
@@ -222,6 +226,21 @@ class Parser:
             location=identifier.location
         )
 
+    def parse_while_statement(self):
+        location = self.get_location(self.current)
+        self.advance()
+
+        self.consume(TokenType.LEFT_PAREN)
+        condition = self.parse_expression()
+        self.consume(TokenType.RIGHT_PAREN)
+
+        block = self.parse_block_statement()
+
+        return WhileStatement(
+            condition=condition,
+            body=block,
+            location=location
+        )
 
     def parse_expression(self):
         return self.parse_binary_expression(1)

@@ -326,6 +326,12 @@ class Interpreter:
                 env=env
             )
 
+        elif isinstance(statement, WhileStatement):
+            self.execute_while_statement(
+                statement=statement,
+                env=env
+            )
+
     def execute_call_statement(self, statement: CallStatement, env: Environment):
         self.execute_call_expression(
             expr=statement.call,
@@ -542,6 +548,28 @@ class Interpreter:
                     line=location.line,
                     column=location.column
                 )
+
+    def execute_while_statement(self, statement: WhileStatement, env: Environment):
+        # condition_value = self.execute_expression(expr=statement.condition, env=env)
+
+        # if type(condition_value) != bool:
+        #     raise TahaRuntimeError.unexpected_while_condition_type(
+        #         line=statement.condition.location.line,
+        #         column=statement.condition.location.column,
+        #         condition_type=type(condition_value).__name__
+        #     )
+
+        while condition_value := self.execute_expression(expr=statement.condition, env=env):
+
+            if type(condition_value) != bool:
+                raise TahaRuntimeError.unexpected_while_condition_type(
+                    line=statement.condition.location.line,
+                    column=statement.condition.location.column,
+                    condition_type=type(condition_value).__name__
+                )
+
+            for statement_ in statement.body.statements:
+                self.execute_statement(statement=statement_, env=env)
         
 
     def is_number(self, value: object) -> bool:

@@ -22,7 +22,8 @@ from ast_nodes import (
     CallExpression,
     CallStatement,
     AssignmentStatement,
-    CompoundAssignmentStatement
+    CompoundAssignmentStatement,
+    WhileStatement
 )
 from tokens import TokenType
 
@@ -1383,3 +1384,24 @@ def test_parse_compound_assignment_strings(source, token_type):
     assert assignment.name == "a"
 
     assert assignment.value.value == "string"
+
+def test_parse_while_statement():
+    source = "while (a != 9){\n a += 1 \n}"
+    result = parse_source(source).statements[0]
+
+    assert isinstance(result, WhileStatement)
+    assert isinstance(result.condition, BinaryExpression)
+    assert isinstance(result.body, BlockStatement)
+    assert len(result.body.statements) == 1
+    assert result.location == SourceLocation(1, 1)
+
+    assert result.condition.left.name == "a"
+    assert result.condition.right.value == 9
+    assert result.condition.operator == TokenType.BANG_EQUAL
+    assert result.condition.location == SourceLocation(1, 8)
+
+    assert isinstance(result.body.statements[0], CompoundAssignmentStatement)
+    assert result.body.statements[0].name == "a"
+    assert result.body.statements[0].operator == TokenType.PLUS_EQUAL
+    assert result.body.statements[0].value.value == 1
+    assert result.body.statements[0].location == SourceLocation(2, 2)

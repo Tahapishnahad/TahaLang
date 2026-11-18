@@ -20,7 +20,8 @@ KEYWORDS = {
     "if": TokenType.IF,
     "else": TokenType.ELSE,
     "True": TokenType.TRUE,
-    "False": TokenType.FALSE
+    "False": TokenType.FALSE,
+    "while": TokenType.WHILE
 }
 
 ESCAPE_ALLOWED = {"n", "t", "\\", "\""}

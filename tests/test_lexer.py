@@ -266,11 +266,12 @@ def test_scan_identifier_keywords():
         ("if", TokenType.IF),
         ("else", TokenType.ELSE),
         ("True", TokenType.TRUE),
-        ("False", TokenType.FALSE)
+        ("False", TokenType.FALSE),
+        ("while", TokenType.WHILE)
     ]
 
 
-    source = "let if else True False"
+    source = "let if else True False while"
     lexer = Lexer(source)
     tokens = lexer.scan_tokens()
 

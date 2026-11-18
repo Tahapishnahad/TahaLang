@@ -50,6 +50,12 @@ class CompoundAssignmentStatement(Statement):
     location: SourceLocation
 
 @dataclass
+class WhileStatement(Statement):
+    condition: Expression
+    body: BlockStatement
+    location: SourceLocation
+
+@dataclass
 class NumberLiteral(Expression):
     value: int | float
     location: SourceLocation
