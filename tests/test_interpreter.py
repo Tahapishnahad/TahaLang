@@ -6,8 +6,6 @@ from interpreter import Interpreter, Environment
 from errors import TahaRuntimeError
 from ast_nodes import *
 from tokens import TokenType
-from lexer import Lexer
-from parser import Parser
 import taha_builtins
 
 # --------- Test Environment -----------

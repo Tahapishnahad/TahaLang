@@ -49,6 +49,9 @@ class Lexer:
             elif self.peek() == "\n":
                 self.scan_token(TokenType.NEWLINE, "\n")
 
+            elif self.peek() == "@":
+                self.skip_comment()
+
             elif self.is_alpha():
                 self.scan_identifier()
 
@@ -359,3 +362,6 @@ class Lexer:
     def is_at_end(self):
         return self.position == len(self.source)
 
+    def skip_comment(self):
+        while not self.is_at_end() and self.peek() != "\n":
+            self.advance()

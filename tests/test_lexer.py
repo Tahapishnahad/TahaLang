@@ -1,7 +1,7 @@
 #test_lexer.py
 import pytest
 from lexer import Lexer
-from tokens import TokenType
+from tokens import TokenType, Token
 from errors import LexicalError
 
 
@@ -335,7 +335,7 @@ def test_float_with_multiple_decimal_points():
 
 
 def test_unexpected_character():
-    lexer = Lexer("@")
+    lexer = Lexer("^")
 
     with pytest.raises(LexicalError) as exc_info:
         lexer.scan_tokens()
@@ -343,7 +343,7 @@ def test_unexpected_character():
     error = exc_info.value
     assert error.line == 1
     assert error.column == 1
-    assert "@" in error.message
+    assert "^" in error.message
 
 def test_bang_equal_is_valid():
     lexer = Lexer("!=")
@@ -490,6 +490,50 @@ def test_all_two_character_assignment_operators():
         (TokenType.STAR_EQUAL, "*="),
         (TokenType.SLASH_EQUAL, "/="),
         (TokenType.PERCENT_EQUAL, "%=")
+    ]
+
+    actual = [(token.type, token.value) for token in tokens[:-1]]
+
+    assert actual == expected
+
+def test_comment_skipping():
+    source = "let a = 20 @ Defining a variable"
+    lexer = Lexer(source)
+    tokens = lexer.scan_tokens()
+
+    expected = [
+        (TokenType.LET, "let"),
+        (TokenType.IDENTIFIER, "a"),
+        (TokenType.EQUAL, "="),
+        (TokenType.INTEGER, "20"),
+    ]
+
+    actual = [(token.type, token.value) for token in tokens[:-1]]
+
+    assert actual == expected
+
+def test_single_comment_skipping():
+    source = "@ Comment"
+    lexer = Lexer(source)
+    tokens = lexer.scan_tokens()
+
+    assert tokens == [Token(TokenType.EOF, value="", line=1, column=10)]
+
+def test_double_comments_skipping():
+    source = "let a = 20 @ Defining a variable\nprint(a) @ Printing value"
+    lexer = Lexer(source)
+    tokens = lexer.scan_tokens()
+
+    expected = [
+        (TokenType.LET, "let"),
+        (TokenType.IDENTIFIER, "a"),
+        (TokenType.EQUAL, "="),
+        (TokenType.INTEGER, "20"),
+        (TokenType.NEWLINE, "\n"),
+        (TokenType.IDENTIFIER, "print"),
+        (TokenType.LEFT_PAREN, "("),
+        (TokenType.IDENTIFIER, "a"),
+        (TokenType.RIGHT_PAREN, ")"),
     ]
 
     actual = [(token.type, token.value) for token in tokens[:-1]]

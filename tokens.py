@@ -10,7 +10,6 @@ class TokenType(Enum):
     LET = "LET"
     IF = "IF"
     ELSE = "ELSE"
-    PRINT = "PRINT"
     TRUE = "TRUE"
     FALSE = "FALSE"
     WHILE = "WHILE"

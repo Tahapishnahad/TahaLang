@@ -79,7 +79,7 @@ def test_main_invalid_encoding(tmp_path, monkeypatch, capsys):
 def test_main_lexer_error(tmp_path, monkeypatch, capsys):
     path = tmp_path / "invalid_lexing.taha"
 
-    path.write_text("print(@)")
+    path.write_text("print(^)")
 
     monkeypatch.setattr(
             "sys.argv",
@@ -95,7 +95,7 @@ def test_main_lexer_error(tmp_path, monkeypatch, capsys):
     
     assert captured.out == ""
     assert "LexicalError" in captured.err
-    assert "'@'" in captured.err
+    assert "'^'" in captured.err
 
 def test_main_parser_error(tmp_path, monkeypatch, capsys):
     path = tmp_path / "invalid_parsing.taha"

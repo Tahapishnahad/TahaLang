@@ -1,12 +1,10 @@
 #parser.py
 
 from tokens import Token, TokenType
-from lexer import Lexer
 from errors import TahaSyntaxError
 from ast_nodes import (
     Program,
     Statement,
-    Expression,
     SourceLocation,
     LetStatement,
     BlockStatement,
@@ -518,10 +516,3 @@ class Parser:
         while self.check(TokenType.NEWLINE):
             self.advance()
 
-def main():
-    l = Lexer('[1, 2 ,3][1 + 2]')
-    p = Parser(tokens=l.scan_tokens())
-    print(p.parse_postfix())
-
-if __name__ == "__main__":
-    main()

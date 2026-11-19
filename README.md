@@ -326,6 +326,15 @@ while (a < 10) {
 print(a)
 ```
 
+### Single Line Comments
+
+TahaLang supports single-line comments.
+
+```taha
+let a = 10 @ Defining a variable
+@ Comment
+```
+
 ## Error Handling
 
 TahaLang provides structured errors for different stages of execution.
