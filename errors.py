@@ -150,15 +150,15 @@ class TahaRuntimeError(TahaLangError):
 
     @classmethod
     def zero_index(cls, line, column):
-        return cls("Iterable dosen't have any items.", line, column)
+        return cls("Cannot access an index because the iterable is empty.", line, column)
 
     @classmethod
     def invalid_function_callee(cls, line, column, got):
-        return cls(f"Function's callee(name) must be Identifer. got: {got}", line, column)
+        return cls(f"Function's callee(name) must be Identifier. got: {got}", line, column)
 
     @classmethod
     def invalid_function_argument_counts(cls, line, column, function_name, expected_arguments, got_arguments):
-        return cls(f"Function {function_name!r} expects {expected_arguments} argument, got {got_arguments}", line, column)
+        return cls(f"Function {function_name!r} expects {expected_arguments} argument(s), got {got_arguments}", line, column)
 
     @classmethod
     def trying_for_accessing_to_an_invalid_function_in_registry(cls, line, column, function_name):
@@ -166,8 +166,8 @@ class TahaRuntimeError(TahaLangError):
 
     @classmethod
     def unexpected_type_for_len_function_argument(cls, line, column, argument_type):
-        return cls(f"'len' function argument must be List or Sting. got: {argument_type}", line, column)
+        return cls(f"'len' function argument must be list or string. got: {argument_type}", line, column)
 
     @classmethod
     def unexpected_while_condition_type(cls, line, column, condition_type):
-        return cls(f"While condition must be of type bool, got {condition_type}", line, column)
+        return cls(f"While condition must be a boolean, got {condition_type}.", line, column)

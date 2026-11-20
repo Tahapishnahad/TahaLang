@@ -1192,7 +1192,7 @@ def test_index_empty_list_error(interpreter, env):
     with pytest.raises(TahaRuntimeError) as exc:
         interpreter.execute_expression(expr, env)
 
-    assert str(exc.value) == "TahaRuntimeError at line 1, column 1: Iterable dosen't have any items."
+    assert str(exc.value) == "TahaRuntimeError at line 1, column 1: Cannot access an index because the iterable is empty."
 
 def test_index_invalid_object_error(interpreter, env):
     expr = index(
@@ -1255,7 +1255,7 @@ def test_index_empty_string(interpreter, env):
     with pytest.raises(TahaRuntimeError) as exc:
         interpreter.execute_expression(expr, env)
 
-    assert "Iterable dosen't have any items." in str(exc.value)
+    assert "Cannot access an index because the iterable is empty." in str(exc.value)
 
 # -------------------------
 # Function Call
@@ -1827,7 +1827,7 @@ def test_while_statament_with_invalid_condition(interpreter, env: Environment):
     with pytest.raises(TahaRuntimeError) as exc:
         interpreter.execute_statement(statement, env)
 
-    assert exc.value.message == "While condition must be of type bool, got int"
+    assert exc.value.message == "While condition must be a boolean, got int."
 
     assert env.get(name="x", source_location=LOC) == 0
 

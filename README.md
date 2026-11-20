@@ -3,9 +3,9 @@
 **A small, custom programming language and interpreter built with Python.**
 
 <p align="center">
-  <strong>Version 1.0.0</strong>
+  <strong>Version 1.1.0</strong>
   <br>
-  <img src="https://img.shields.io/badge/version-1.0.0-blue" alt="Version 1.0.0">
+  <img src="https://img.shields.io/badge/version-1.1.0-blue" alt="Version 1.1.0">
   <img src="https://img.shields.io/badge/python-3.11+-blue" alt="Python 3.11+">
   <img src="https://img.shields.io/badge/tests-passing-brightgreen" alt="Tests Passing">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
@@ -28,16 +28,18 @@ Rather than relying on existing interpreter frameworks, its core components were
 ### Language Features
 
 - Variable declarations
-- Integer, string, lists, and boolean literals
+- Numbers (integers and floats), string, list, and boolean literals
 - Arithmetic operations
 - Comparison operators
 - Assignment operators
 - Unary operators
 - While loops
+- Built-ins and Builtin Registry
 - Operator precedence
 - Parenthesized expressions
 - Conditional statements (`if` / `else`)
 - Block statements
+- Single-Line Comments
 - Lexical scoping
 - Runtime type checking
 - Runtime error handling
@@ -88,6 +90,7 @@ Source Code (.taha)
 ```text
 TahaLang/
 │
+├── .gitignore
 ├── main.py
 ├── lexer.py
 ├── parser.py
@@ -98,19 +101,20 @@ TahaLang/
 ├── taha_builtins.py
 │
 ├── tests/
+│   ├── __init__.py
 │   ├── test_lexer.py
 │   ├── test_parser.py
 │   ├── test_ast_nodes.py
+│   ├── test_tokens.py
 │   ├── test_interpreter.py
 │   ├── test_errors.py
+│   ├── test_builtins.py
 │   └── test_main.py
-│   └── taha_builtins.py
 │
-└── README.md
+├── README.md
+├── requirements.txt
 └── LICENSE
 ```
-
-*The structure above illustrates the main components; individual test filenames may vary.*
 
 ## Getting Started
 
@@ -137,7 +141,7 @@ cd TahaLang
 Install the development dependency:
 
 ```bash
-pip install pytest
+pip install -r requirements.txt
 ```
 
 ## Running TahaLang
@@ -164,6 +168,8 @@ Hello, TahaLang!
 
 ## Language Syntax
 
+The syntax of this language can be considered a combination of the syntax of Python, C, and JavaScript. Some syntactic elements are also unique and novel—for instance, defining comments using `@`.
+
 ### Variables
 
 Declare variables using `let`:
@@ -177,6 +183,16 @@ print(name)
 print(age)
 print(is_programmer)
 ```
+
+Result:
+
+```taha
+Jack
+18
+True
+```
+
+Variables can also store computational values, such as `2 + 2`.
 
 ### Arithmetic Operations
 
@@ -193,6 +209,42 @@ print(a / b)
 print(a % b)
 ```
 
+Result:
+
+```taha
+15
+5
+50
+2
+0
+```
+
+Operator Descriptions:
+
+- `+` -> Adds the left and right operands. It supports both numeric addition and string concatenation.
+
+For Example:
+
+```taha
+let string = "String"
+
+print(string + " Yes")
+```
+
+Result:
+
+```taha
+String Yes
+```
+
+- `-` -> Subtracts the right operand from the left operand.
+
+- `*` -> Multiplies the left operand by the right operand.
+
+- `/` -> Divides the left operand by the right operand.
+
+- `%` -> Divides the left operand by the right operand and returns the remainder of the division.
+
 ### Comparison Operators
 
 Supported comparison operators include:
@@ -206,16 +258,42 @@ Supported comparison operators include:
 >=
 ```
 
+Operator Descriptions:
+
+- `==` (`EQUAL_EQUAL`): Returns `True` only if the left and right operands are equal.
+
+- `!=` (`BANG_EQUAL`): Returns `True` only if the left and right operands are not equal.
+
+- `<` (`LESS`): Returns `True` only if the left operand is less than the right operand.
+
+- `<=` (`LESS_EQUAL`): Returns `True` only if the left operand is less than or equal to the right operand.
+
+- `>` (`GREATER`): Returns `True` only if the left operand is greater than the right operand.
+
+- `>=` (`GREATER_EQUAL`): Returns `True` only if the left operand is greater than or equal to the right operand.
+
+- In case the inputs are strings, the language uses Lexicographical Comparison to compare them.
+
+
 Example:
 
 ```taha
 let age = 18
+let animal = "cat"
 
 print(age >= 18)
 print(age == 18)
+print(animal > "dog")
 ```
 
-### Assignment Operators
+Result:
+```taha
+True
+True
+False
+```
+
+### Assignment Operators (NEW in 1.1.0)
 
 Supported assignment operators include:
 
@@ -228,6 +306,20 @@ Supported assignment operators include:
 %=
 ```
 
+Operator Descriptions:
+
+- `=`: Assigns the right-hand value to the variable on the left.
+
+- `+=`: Adds the right operand to the variable's current value and assigns the result to that variable.
+
+- `-=`: Subtracts the right operand from the variable's current value and assigns the result to that variable.
+
+- `*=`: Multiplies the variable's current value by the right operand and assigns the result to that variable.
+
+- `/=`: Divides the variable's current value by the right operand and assigns the result to that variable.
+
+- `%=`: Calculates the remainder when the variable's current value is divided by the right operand and assigns the result to that variable.
+
 Example:
 
 ```taha
@@ -238,24 +330,51 @@ age += 10
 name += " Jane"
 age *= 2
 
+print(age)
+print(name)
+
 ```
 
-Note: TahaLang can assign float and int to each other
+Result:
+```taha
+56
+Sarah Jane
+```
+
+Note: TahaLang can assign float and int to each other, because both are NumberLiteral.
 
 ### Unary Operators
 
-TahaLang supports unary operators:
+Supported unary operators include:
 
+```text
+-
+!
+```
+
+Operator Descriptions:
+
+- `-`: Returns the negated value of a number.
+
+- `!`: Calculates and returns the inverse of Boolean values.
+
+Example:
 ```taha
-let number = 10
-
-print(-number)
+print(-20)
 print(!True)
+```
+
+Result:
+```
+-20
+False
 ```
 
 ### Conditional Statements
 
 Use `if` and `else` to control program execution:
+
+Example:
 
 ```taha
 let age = 18
@@ -267,11 +386,22 @@ if (age >= 18) {
 }
 ```
 
+Result:
+
+```
+Adult
+```
+
+- `else` must come after the closing curly brace of the `if`.
+- Parentheses are mandatory for writing conditions.
+
 ### Block Scope
 
 Blocks create their own local environments.
 
-Variables declared inside a block belong to that block's scope.
+A block can access variables declared in its parent scopes, but variables declared inside the block are not accessible outside it.
+
+Example:
 
 ```taha
 let value = 10
@@ -284,79 +414,198 @@ if (True) {
 print(value)
 ```
 
-### Lists and Index Locating
+Result:
 
-TahaLang supportes listes.
+```
+20
+10
+```
+
+### Lists and Indexing (NEW in 1.1.0)
+
+TahaLang supports lists.
 
 Defining a list:
 ```taha
 let list = [1, 2, 3]
 ```
 
-Getting list element:
+Getting list / string element:
 ```taha
 list[0]
 list[1]
 "StringString"[4]
 ```
 
+Result:
+```
+1
+2
+n
+```
+
 A list can contain different types.
 TahaLang has zero-based indexes.
 
-### Builtins
+### Builtins (NEW in 1.1.0)
 
 TahaLang has built-in functions:
 
+Available Built-in Functions:
+
+```text
+print(value)
+len(value)
+```
+
+- `print` -> Prints the value to the terminal.
+- `len` ->  Returns the length of a list or a string.
+
 ```taha
 print("Something")
-len([1, 2, 3])
-
+print(len([1, 2, 3]))
 ```
 
-### While loop
-
-TahaLang has while loops:
+Result:
 
 ```taha
-let a = 0
-while (a < 10) {
-  a += 1
-}
-
-print(a)
+Something
+3
 ```
 
-### Single Line Comments
+### While loop (NEW in 1.1.0)
+
+The while loop repeatedly executes a block of statements as long as its condition evaluates to True.
+
+- The condition must evaluate to a Boolean value.
+- The condition is re-evaluated in each iteration.
+- If the condition is `False` from the start, the body is not executed.
+- The loop continues as long as the condition is `True`.
+- If the condition never becomes `False`, the loop becomes infinite.
+- While body can access variables declared in its parent scopes, but variables declared inside the block are not accessible outside it.
+
+```taha
+while (condition) {
+  statement
+}
+```
+
+Example:
+```taha
+let counter = 0
+
+while (counter < 5) {
+  print(counter)
+  counter += 1
+}
+
+```
+
+Result:
+```
+0
+1
+2
+3
+4
+```
+
+### Single Line Comments (NEW in 1.1.0)
 
 TahaLang supports single-line comments.
+Comments are ignored by the interpreter.
+`@` is used to start a comment.
 
 ```taha
 let a = 10 @ Defining a variable
 @ Comment
+print(a) @ Printing
 ```
 
 ## Error Handling
 
-TahaLang provides structured errors for different stages of execution.
+TahaLang provides a structured error-handling system to identify and report errors during different stages of program execution.
 
-### Lexical Errors
+All language errors inherit from the base `TahaLangError` class.
 
-Raised when the lexer encounters invalid characters or malformed literals.
+### Error Types
 
-### Syntax Errors
+TahaLang defines three main categories of errors:
 
-Raised when the parser encounters invalid program syntax.
+#### 1. Lexical Errors
 
-### Runtime Errors
+`LexicalError` is raised when the lexer encounters invalid characters, malformed escape sequences, or invalid string literals.
 
-Raised when an error occurs during program execution, such as:
+Examples include:
+
+- Unexpected characters
+- Malformed numeric literals, such as `12.` and `.33`
+- Unexpected escape sequences
+- Newlines inside string literals
+- Unterminated strings
+
+#### 2. Syntax Errors
+
+`TahaSyntaxError` is raised when the parser encounters invalid syntax or unexpected tokens while parsing a program.
+
+Examples include:
+
+- Unexpected token types
+- Unexpected end of file (EOF)
+- Invalid expressions
+- Unexpected commas in lists or function arguments
+- Missing expressions after commas
+- Invalid expressions used for indexing
+
+#### 3. Runtime Errors
+
+`TahaRuntimeError` is raised when an error occurs during program execution.
+
+Examples include:
 
 - Division by zero
 - Undefined variables
-- Invalid operand types
+- Assignments to undefined variables
+- Invalid assignment types
 - Duplicate variable declarations
+- Invalid operand types
+- Invalid objects or indexes in index expressions
+- Invalid function calls or argument counts
+- Invalid built-in function arguments
+- Invalid `while` loop condition types
 
-Errors include source location information to help identify where a problem occurred.
+### Error Information
+
+Every TahaLang error contains the following information:
+
+- **Error Type:** The name of the error class.
+- **Line:** The line number where the error occurred.
+- **Column:** The column number where the error occurred.
+- **Message:** A description of the error.
+
+Errors are formatted using the following structure:
+
+```text
+ErrorType at line LINE, column COLUMN: MESSAGE
+```
+
+### Example
+
+Consider the following TahaLang code:
+
+```taha
+let result = 10 / 0
+```
+
+This code raises a runtime error because division by zero is not allowed.
+
+Example error output:
+
+```text
+TahaRuntimeError at line 1, column 19: Division by zero.
+```
+
+TahaLang provides structured errors for different stages of execution.
 
 ## Testing
 
@@ -402,8 +651,8 @@ Potential directions for future versions include:
 - Expanded standard functionality
 - More comprehensive language tests
 - Further interpreter optimizations
-- Adding Functions
-- Adding 'for' loop
+- Adding User-defined Functions
+- Adding a `for` loop
 
 ## Author
 
@@ -422,7 +671,7 @@ The project architecture, implementation decisions, and final development work w
 ---
 
 <p align="center">
-  <strong>TahaLang 1.0.0</strong>
+  <strong>TahaLang 1.1.0</strong>
   <br>
-  Built from scratch with Python. No Framework
+  Built from scratch with Python. No frameworks.
 </p>
