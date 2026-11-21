@@ -456,10 +456,12 @@ Available Built-in Functions:
 ```text
 print(value)
 len(value)
+block_print(value)
 ```
 
 - `print` -> Prints the value to the terminal.
 - `len` ->  Returns the length of a list or a string.
+- `block_print` -> Prints the value as an ascii art with block font to the terminal. It just supports string type for the value.
 
 ```taha
 print("Something")
@@ -471,6 +473,22 @@ Result:
 ```taha
 Something
 3
+```
+
+`block_print` Example:
+```taha
+block_print("Hi!")
+```
+
+Result:
+```taha
+
+_|    _|  _|  _|  
+_|    _|      _|  
+_|_|_|_|  _|  _|  
+_|    _|  _|      
+_|    _|  _|  _| 
+
 ```
 
 ### While loop (NEW in 1.1.0)

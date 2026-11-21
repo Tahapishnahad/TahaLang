@@ -7,6 +7,7 @@ from errors import TahaRuntimeError
 from ast_nodes import *
 from tokens import TokenType
 import taha_builtins
+import pyfiglet
 
 # --------- Test Environment -----------
 def test_define():
@@ -410,6 +411,7 @@ def env():
 def builtins():
     builtins = taha_builtins.BuiltinRegistry()
     builtins.register("print", taha_builtins.builtin_print, 1)
+    builtins.register("block_print", taha_builtins.block_print, 1)
     builtins.register("len", taha_builtins.builtin_len, 1)
     return builtins
 
@@ -717,9 +719,18 @@ LOC = SourceLocation(line=1, column=1)
 def print_statement(expression):
     return CallStatement(
         call=CallExpression(
-            callee=Identifier("print", LOC),
+            callee=Identifier("print", make_location()),
             arguments=[expression],
-            location=LOC
+            location=make_location()
+        )
+    )
+
+def block_print_statement(expression):
+    return CallStatement(
+        CallExpression(
+            callee=Identifier("block_print", make_location()),
+            arguments=[expression],
+            location=make_location()
         )
     )
 
@@ -1880,3 +1891,21 @@ def test_while_statament_with_if_statement(interpreter, env: Environment):
 
     assert env.get(name="x", source_location=LOC) == 10
     assert env.get(name="result", source_location=LOC) == "....."
+
+# Block Print
+
+def test_block_print_statement(capsys, interpreter, env):
+    statement = block_print_statement(string("Hi!"))
+
+    interpreter.execute_statement(statement, env)
+
+    expected_font = pyfiglet.figlet_format("Hi!", font="block")
+
+    assert capsys.readouterr().out == expected_font + "\n"
+
+
+def test_block_print_statement_raises_error(interpreter, env):
+    statement = block_print_statement(number(23))
+
+    with pytest.raises(TahaRuntimeError):
+        interpreter.execute_statement(statement, env)

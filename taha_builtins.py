@@ -1,7 +1,8 @@
 #builtins.py
 
 from errors import TahaRuntimeError
-from ast_nodes import SourceLocation
+import pyfiglet
+
 
 class BuiltinRegistry:
     def __init__(self):
@@ -35,3 +36,14 @@ def builtin_len(value, location):
 
 def builtin_print(value, location):
     print(value)
+
+def block_print(value, location):
+    if type(value) != str:
+        raise TahaRuntimeError.type_error(
+            f"'block_print' value must be str not {type(value).__name__}",
+            line=location.line,
+            column=location.column
+        )
+    
+    font = pyfiglet.figlet_format(value, font="block")
+    print(font)

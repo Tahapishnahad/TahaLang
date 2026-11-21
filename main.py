@@ -11,8 +11,15 @@ from errors import TahaLangError
 from taha_builtins import (
     BuiltinRegistry,
     builtin_print,
-    builtin_len
+    builtin_len,
+    block_print
 )
+
+BUILTINS = {
+    ("print", builtin_print, 1),
+    ("len", builtin_len, 1),
+    ("block_print", block_print, 1)
+}
 
 def main():
     arg_parser = argparse.ArgumentParser(
@@ -65,8 +72,9 @@ def run_source(source: str):
 
 def create_builtin_registry() -> BuiltinRegistry:
     reg = BuiltinRegistry()
-    reg.register("print", builtin_print, 1)
-    reg.register("len", builtin_len, 1)
+    for builtin in BUILTINS:
+        reg.register(builtin[0], builtin[1], builtin[2])
+        
     return reg
 
 if __name__ == "__main__":
