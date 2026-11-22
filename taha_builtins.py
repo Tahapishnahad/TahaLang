@@ -6,12 +6,34 @@ import pyfiglet
 
 class BuiltinRegistry:
     def __init__(self):
+        """
+        Init function for registry.
+
+        Arguments:
+            functions: a dict who stores built-in datas.
+        """
         self.functions = {}
 
     def register(self, name, function, args_count):
+        """
+        Registers functions in 'self.functions' with this format -> (name, function, args_count)
+
+        Arguments:
+            name: function name like; "print", "len".
+            function: function who runs function name.
+            args_count: count of arguments for function arguments.
+        """
         self.functions[name] = (function, args_count)
 
     def get(self, name, location):
+        """
+        Gets a function data by its name from 'self.functions'.
+
+        Arguments:
+            name: Function name who we want to search.
+            location: Location in case of invalid function name.
+        """
+
         if name not in self.functions:
             raise TahaRuntimeError.trying_for_accessing_to_an_invalid_function_in_registry(
                 line=location.line,
@@ -22,6 +44,13 @@ class BuiltinRegistry:
         return self.functions[name]
 
     def exists(self, name):
+        """
+        Returns is function exsists in 'self.functions' by its name as a bool.
+
+        Arguments:
+            name: Function name who we want to check for existants.
+        """
+
         return name in self.functions
 
 def builtin_len(value, location):
