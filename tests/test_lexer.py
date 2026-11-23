@@ -187,7 +187,7 @@ def test_scan_operators():
 
 
 def test_all_single_character_operators():
-    source = "+ - * / % ( ) { } [ ] = < > ! ,"
+    source = "+ - * / % ( ) { } [ ] = < > ! , ;"
     lexer = Lexer(source)
     tokens = lexer.scan_tokens()
 
@@ -207,7 +207,8 @@ def test_all_single_character_operators():
         (TokenType.LESS, "<"),
         (TokenType.GREATER, ">"),
         (TokenType.BANG, "!"),
-        (TokenType.COMMA, ",")
+        (TokenType.COMMA, ","),
+        (TokenType.SEMICOLON, ";")
     ]
 
     actual = [(token.type, token.value) for token in tokens[:-1]]
@@ -267,11 +268,12 @@ def test_scan_identifier_keywords():
         ("else", TokenType.ELSE),
         ("True", TokenType.TRUE),
         ("False", TokenType.FALSE),
-        ("while", TokenType.WHILE)
+        ("while", TokenType.WHILE),
+        ("for", TokenType.FOR)
     ]
 
 
-    source = "let if else True False while"
+    source = "let if else True False while for"
     lexer = Lexer(source)
     tokens = lexer.scan_tokens()
 
@@ -539,3 +541,38 @@ def test_double_comments_skipping():
     actual = [(token.type, token.value) for token in tokens[:-1]]
 
     assert actual == expected
+
+def test_for_tokens_lexing():
+    source = "for (let a = 10 ; a > 0 ; a -= 1) {\n print(a) \n}"
+    lexer = Lexer(source)
+    tokens = lexer.scan_tokens()
+
+    expected = [
+        (TokenType.FOR, "for"),
+        (TokenType.LEFT_PAREN, "("),
+        (TokenType.LET, "let"),
+        (TokenType.IDENTIFIER, "a"),
+        (TokenType.EQUAL, "="),
+        (TokenType.INTEGER, "10"),
+        (TokenType.SEMICOLON, ";"),
+        (TokenType.IDENTIFIER, "a"),
+        (TokenType.GREATER, ">"),
+        (TokenType.INTEGER, "0"),
+        (TokenType.SEMICOLON, ";"),
+        (TokenType.IDENTIFIER, "a"),
+        (TokenType.MINUS_EQUAL, "-="),
+        (TokenType.INTEGER, "1"),
+        (TokenType.RIGHT_PAREN, ")"),
+        (TokenType.LEFT_BRACE, "{"),
+        (TokenType.NEWLINE, "\n"),
+        (TokenType.IDENTIFIER, "print"),
+        (TokenType.LEFT_PAREN, "("),
+        (TokenType.IDENTIFIER, "a"),
+        (TokenType.RIGHT_PAREN, ")"),
+        (TokenType.NEWLINE, "\n"),
+        (TokenType.RIGHT_BRACE, "}"),
+    ]
+
+    got = [(token.type, token.value) for token in tokens[:-1]]
+
+    assert got == expected

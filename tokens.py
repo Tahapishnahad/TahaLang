@@ -13,6 +13,7 @@ class TokenType(Enum):
     TRUE = "TRUE"
     FALSE = "FALSE"
     WHILE = "WHILE"
+    FOR = "FOR"
 
     IDENTIFIER = "IDENTIFIER"
     INTEGER = "INTEGER"
@@ -48,6 +49,7 @@ class TokenType(Enum):
     RIGHT_SQBRACKET = "RIGHT_SQBRACKET" # ]
 
     COMMA = "COMMA" # ,
+    SEMICOLON = "SEMICOLON" # ;
 
 @dataclass
 class Token:

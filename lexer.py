@@ -10,7 +10,8 @@ SINGLE_CHAR_TOKENS = {
     "}": TokenType.RIGHT_BRACE,
     "[": TokenType.LEFT_SQBRACKET,
     "]": TokenType.RIGHT_SQBRACKET,
-    ",": TokenType.COMMA
+    ",": TokenType.COMMA,
+    ";": TokenType.SEMICOLON
 }
 
 COMPOUND_OPERATOR_STARTS = {"=", "<", ">", "!", "+", "-", "*", "/", "%"}
@@ -21,7 +22,8 @@ KEYWORDS = {
     "else": TokenType.ELSE,
     "True": TokenType.TRUE,
     "False": TokenType.FALSE,
-    "while": TokenType.WHILE
+    "while": TokenType.WHILE,
+    "for": TokenType.FOR
 }
 
 ESCAPE_ALLOWED = {"n", "t", "\\", "\""}
