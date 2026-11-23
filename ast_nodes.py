@@ -266,3 +266,22 @@ class CallStatement(Statement):
     """
 
     call: CallExpression
+
+@dataclass
+class ForStatement(Statement):
+    """
+    Represents a for loop statement. format: for(init ; condition ; update) {}
+
+    Arguments:
+        init: A part of for loop statement who defines loop variable.
+        condition: A (Expresison) part of for loop statement who will be checked every time the body got runed.
+        update: A part of for loop statement who will be executed every time the body got runed and updates variable.
+        body: A part of for loop statament who contains statements and they will got executed every time who condition returns true. 
+        location: The source location of the for loop statement.
+    """
+
+    init: LetStatement
+    condition: Expression
+    update: Statement
+    body: BlockStatement
+    location: SourceLocation

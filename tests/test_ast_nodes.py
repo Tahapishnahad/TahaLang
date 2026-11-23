@@ -19,7 +19,8 @@ from ast_nodes import (
     CallStatement,
     AssignmentStatement,
     CompoundAssignmentStatement,
-    WhileStatement
+    WhileStatement,
+    ForStatement
 )
 
 LOC = SourceLocation(1, 1)
@@ -538,3 +539,89 @@ def test_while_statement():
     assert statement.condition.location == LOC
     assert statement.body.location == LOC
     assert statement.body.statements[0].call.location == LOC
+
+def test_for_statement():
+
+    # for (let x = 10; x > 0; x -= 1) { print(x) }
+
+    statement = ForStatement(
+        init=LetStatement(
+            name="x",
+            value=NumberLiteral(10, LOC),
+            location=LOC
+        ),
+
+        condition=BinaryExpression(
+            left=Identifier("x", LOC),
+            operator=TokenType.GREATER,
+            right=NumberLiteral(0, LOC),
+            location=LOC
+        ),
+
+        update=CompoundAssignmentStatement(
+            name="x",
+            operator=TokenType.MINUS_EQUAL,
+            value=NumberLiteral(1, LOC),
+            location=LOC
+        ),
+
+        body=BlockStatement(
+            statements=[
+                CallStatement(
+                    CallExpression(
+                        callee=Identifier("print", LOC),
+                        arguments=[
+                            Identifier("x", LOC)
+                        ],
+                        location=LOC
+                    )
+                )
+            ],
+
+            location=LOC
+        ),
+
+        location=LOC
+    )
+
+    assert isinstance(statement, ForStatement)
+    assert isinstance(statement.init, LetStatement)
+    assert isinstance(statement.condition, BinaryExpression)
+    assert isinstance(statement.condition, Expression)
+    assert isinstance(statement.condition.left, Identifier)
+    assert isinstance(statement.condition.right, NumberLiteral)
+    assert isinstance(statement.update, Statement)
+    assert isinstance(statement.update, CompoundAssignmentStatement)
+    assert isinstance(statement.body, BlockStatement)
+    assert isinstance(statement.body.statements[0], CallStatement)
+    assert isinstance(statement.body.statements[0].call, CallExpression)
+    assert isinstance(statement.body.statements[0].call.callee, Identifier)
+    assert isinstance(statement.body.statements[0].call.arguments[0], Identifier)
+
+    assert statement.location == LOC
+    assert statement.init.location == LOC
+    assert statement.init.value.location == LOC
+    assert statement.condition.location == LOC
+    assert statement.condition.left.location == LOC
+    assert statement.condition.right.location == LOC
+    assert statement.update.location == LOC
+    assert statement.update.value.location == LOC
+    assert statement.body.statements[0].call.location == LOC
+    assert statement.body.statements[0].call.callee.location == LOC
+    assert statement.body.statements[0].call.arguments[0].location == LOC
+
+    assert statement.init.name == "x"
+    assert statement.init.value.value == 10
+
+    assert statement.condition.left.name == "x"
+    assert statement.condition.operator == TokenType.GREATER
+    assert statement.condition.right.value == 0
+
+    assert statement.update.name == "x"
+    assert statement.update.operator == TokenType.MINUS_EQUAL
+    assert statement.update.value.value == 1
+
+    assert len(statement.body.statements) == 1
+    assert statement.body.statements[0].call.callee.name == "print"
+    assert len(statement.body.statements[0].call.arguments) == 1
+    assert statement.body.statements[0].call.arguments[0].name == "x"
