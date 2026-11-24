@@ -21,7 +21,8 @@ from ast_nodes import (
     CallStatement,
     AssignmentStatement,
     CompoundAssignmentStatement,
-    WhileStatement
+    WhileStatement,
+    ForStatement
 )
 
 
@@ -97,6 +98,9 @@ class Parser:
                 
                 elif isinstance(expression, Identifier):
                     return self.parse_assignment_statement(expression)
+
+            case TokenType.FOR:
+                return self.parse_for_statement()
 
 
             case TokenType.IF:
@@ -237,6 +241,28 @@ class Parser:
         return WhileStatement(
             condition=condition,
             body=block,
+            location=location
+        )
+
+    def parse_for_statement(self):
+        location = self.get_location(self.current)
+        self.advance()
+
+        self.consume(TokenType.LEFT_PAREN)
+        init = self.parse_let_statement()
+        self.consume(TokenType.SEMICOLON)
+        condition = self.parse_expression()
+        self.consume(TokenType.SEMICOLON)
+        update = self.parse_statement()
+        self.consume(TokenType.RIGHT_PAREN)
+
+        body = self.parse_block_statement()
+
+        return ForStatement(
+            init=init,
+            condition=condition,
+            update=update,
+            body=body,
             location=location
         )
 

@@ -23,7 +23,8 @@ from ast_nodes import (
     CallStatement,
     AssignmentStatement,
     CompoundAssignmentStatement,
-    WhileStatement
+    WhileStatement,
+    ForStatement
 )
 from tokens import TokenType
 
@@ -1405,3 +1406,229 @@ def test_parse_while_statement():
     assert result.body.statements[0].operator == TokenType.PLUS_EQUAL
     assert result.body.statements[0].value.value == 1
     assert result.body.statements[0].location == SourceLocation(2, 2)
+
+def test_parse_for_statement():
+    source = "for (let i = 1; i <= 5; i += 1) {\n print(i) \n}"
+    for_ast = parse_source(source).statements[0]
+
+    assert isinstance(for_ast, ForStatement)
+    assert isinstance(for_ast.init, LetStatement)
+    assert isinstance(for_ast.init.value, NumberLiteral)
+    assert isinstance(for_ast.condition, BinaryExpression)
+    assert isinstance(for_ast.condition.left, Identifier)
+    assert isinstance(for_ast.condition.right, NumberLiteral)
+    assert isinstance(for_ast.update, CompoundAssignmentStatement)
+    assert isinstance(for_ast.update.value, NumberLiteral)
+    assert isinstance(for_ast.body, BlockStatement)
+    assert isinstance(for_ast.body.statements[0], CallStatement)
+    assert isinstance(for_ast.body.statements[0].call, CallExpression)
+    assert isinstance(for_ast.body.statements[0].call.callee, Identifier)
+    assert isinstance(for_ast.body.statements[0].call.arguments[0], Identifier)
+
+    assert for_ast.location == SourceLocation(1, 1)
+    assert for_ast.init.location == SourceLocation(1, 6)
+    assert for_ast.init.value.location == SourceLocation(1, 14)
+    assert for_ast.condition.location == SourceLocation(1, 17)
+    assert for_ast.condition.left.location == SourceLocation(1, 17)
+    assert for_ast.condition.right.location == SourceLocation(1, 22)
+    assert for_ast.update.location == SourceLocation(1, 25)
+    assert for_ast.update.value.location == SourceLocation(1, 30)
+    assert for_ast.body.location == SourceLocation(1, 33)
+    assert for_ast.body.statements[0].call.location == SourceLocation(2, 2)
+    assert for_ast.body.statements[0].call.callee.location == SourceLocation(2, 2)
+    assert for_ast.body.statements[0].call.arguments[0].location == SourceLocation(2, 8)
+
+    assert len(for_ast.body.statements) == 1
+
+    assert for_ast.init.value.value == 1
+    assert for_ast.init.name == "i"
+
+    assert for_ast.condition.left.name == "i"
+    assert for_ast.condition.operator == TokenType.LESS_EQUAL
+    assert for_ast.condition.right.value == 5
+
+    assert for_ast.update.name == "i"
+    assert for_ast.update.operator == TokenType.PLUS_EQUAL
+    assert for_ast.update.value.value == 1
+
+    assert for_ast.body.statements[0].call.callee.name == "print"
+    assert for_ast.body.statements[0].call.arguments[0].name == "i"
+
+def test_parse_for_statement_with_boolean_condition():
+    source = "for (let i = 1; True; i += 1) {\n print(i) \n}"
+    for_ast = parse_source(source).statements[0]
+
+    assert isinstance(for_ast, ForStatement)
+    assert isinstance(for_ast.init, LetStatement)
+    assert isinstance(for_ast.init.value, NumberLiteral)
+    assert isinstance(for_ast.condition, BooleanLiteral)
+    assert isinstance(for_ast.update, CompoundAssignmentStatement)
+    assert isinstance(for_ast.update.value, NumberLiteral)
+    assert isinstance(for_ast.body, BlockStatement)
+    assert isinstance(for_ast.body.statements[0], CallStatement)
+    assert isinstance(for_ast.body.statements[0].call, CallExpression)
+    assert isinstance(for_ast.body.statements[0].call.callee, Identifier)
+    assert isinstance(for_ast.body.statements[0].call.arguments[0], Identifier)
+
+    assert for_ast.location == SourceLocation(1, 1)
+    assert for_ast.init.location == SourceLocation(1, 6)
+    assert for_ast.init.value.location == SourceLocation(1, 14)
+    assert for_ast.condition.location == SourceLocation(1, 17)
+    assert for_ast.update.location == SourceLocation(1, 23)
+    assert for_ast.update.value.location == SourceLocation(1, 28)
+    assert for_ast.body.location == SourceLocation(1, 31)
+    assert for_ast.body.statements[0].call.location == SourceLocation(2, 2)
+    assert for_ast.body.statements[0].call.callee.location == SourceLocation(2, 2)
+    assert for_ast.body.statements[0].call.arguments[0].location == SourceLocation(2, 8)
+
+    assert len(for_ast.body.statements) == 1
+
+    assert for_ast.init.value.value == 1
+    assert for_ast.init.name == "i"
+
+    assert for_ast.condition.value is True
+
+    assert for_ast.update.name == "i"
+    assert for_ast.update.operator == TokenType.PLUS_EQUAL
+    assert for_ast.update.value.value == 1
+
+    assert for_ast.body.statements[0].call.callee.name == "print"
+    assert for_ast.body.statements[0].call.arguments[0].name == "i"
+
+def test_parse_for_statement_with_empty_body():
+    source = "for (let i = 1; True; i += 1) {}"
+    for_ast = parse_source(source).statements[0]
+
+    assert isinstance(for_ast, ForStatement)
+    assert isinstance(for_ast.init, LetStatement)
+    assert isinstance(for_ast.init.value, NumberLiteral)
+    assert isinstance(for_ast.condition, BooleanLiteral)
+    assert isinstance(for_ast.update, CompoundAssignmentStatement)
+    assert isinstance(for_ast.update.value, NumberLiteral)
+    assert isinstance(for_ast.body, BlockStatement)
+
+    assert for_ast.location == SourceLocation(1, 1)
+    assert for_ast.init.location == SourceLocation(1, 6)
+    assert for_ast.init.value.location == SourceLocation(1, 14)
+    assert for_ast.condition.location == SourceLocation(1, 17)
+    assert for_ast.update.location == SourceLocation(1, 23)
+    assert for_ast.update.value.location == SourceLocation(1, 28)
+    assert for_ast.body.location == SourceLocation(1, 31)
+
+    assert len(for_ast.body.statements) == 0
+
+    assert for_ast.init.value.value == 1
+    assert for_ast.init.name == "i"
+
+    assert for_ast.condition.value is True
+
+    assert for_ast.update.name == "i"
+    assert for_ast.update.operator == TokenType.PLUS_EQUAL
+    assert for_ast.update.value.value == 1
+
+def test_parse_for_statement_with_assignment_update():
+    source = "for (let i = 1; i <= 5; i = 5) {\n print(i) \n}"
+    for_ast = parse_source(source).statements[0]
+
+    assert isinstance(for_ast, ForStatement)
+    assert isinstance(for_ast.init, LetStatement)
+    assert isinstance(for_ast.init.value, NumberLiteral)
+    assert isinstance(for_ast.condition, BinaryExpression)
+    assert isinstance(for_ast.condition.left, Identifier)
+    assert isinstance(for_ast.condition.right, NumberLiteral)
+    assert isinstance(for_ast.update, AssignmentStatement)
+    assert isinstance(for_ast.update.value, NumberLiteral)
+    assert isinstance(for_ast.body, BlockStatement)
+    assert isinstance(for_ast.body.statements[0], CallStatement)
+    assert isinstance(for_ast.body.statements[0].call, CallExpression)
+    assert isinstance(for_ast.body.statements[0].call.callee, Identifier)
+    assert isinstance(for_ast.body.statements[0].call.arguments[0], Identifier)
+
+    assert for_ast.location == SourceLocation(1, 1)
+    assert for_ast.init.location == SourceLocation(1, 6)
+    assert for_ast.init.value.location == SourceLocation(1, 14)
+    assert for_ast.condition.location == SourceLocation(1, 17)
+    assert for_ast.condition.left.location == SourceLocation(1, 17)
+    assert for_ast.condition.right.location == SourceLocation(1, 22)
+    assert for_ast.update.location == SourceLocation(1, 25)
+    assert for_ast.update.value.location == SourceLocation(1, 29)
+    assert for_ast.body.location == SourceLocation(1, 32)
+    assert for_ast.body.statements[0].call.location == SourceLocation(2, 2)
+    assert for_ast.body.statements[0].call.callee.location == SourceLocation(2, 2)
+    assert for_ast.body.statements[0].call.arguments[0].location == SourceLocation(2, 8)
+
+    assert len(for_ast.body.statements) == 1
+
+    assert for_ast.init.value.value == 1
+    assert for_ast.init.name == "i"
+
+    assert for_ast.condition.left.name == "i"
+    assert for_ast.condition.operator == TokenType.LESS_EQUAL
+    assert for_ast.condition.right.value == 5
+
+    assert for_ast.update.name == "i"
+    assert for_ast.update.value.value == 5
+
+    assert for_ast.body.statements[0].call.callee.name == "print"
+    assert for_ast.body.statements[0].call.arguments[0].name == "i"
+
+@pytest.mark.parametrize(
+    ("source", "error_msg"),
+    [
+        (
+            "for (let i = 10; i > 0;) {}",
+            "TahaSyntaxError at line 1, column 24: Unexpected token type: RIGHT_PAREN, expected: Statement"
+        ),
+
+        (
+            "for (let i = 10;; i += 1) {}", 
+            "TahaSyntaxError at line 1, column 17: Invalid expression."
+        ),
+
+        (
+            "for (; i < 0; i += 1) {}",
+            "TahaSyntaxError at line 1, column 10: Unexpected token type: LESS, expected: EQUAL"
+        ),
+
+        (
+            "for (let i = 10; i < 0; i += 1)", 
+            "TahaSyntaxError at line 1, column 32: Unexpected token type: EOF, expected: LEFT_BRACE"
+        ),
+
+        (
+            "for (let i = 10; i < 0; i += 1 {}", 
+            "TahaSyntaxError at line 1, column 32: Unexpected token type: LEFT_BRACE, expected: RIGHT_PAREN"
+        ),
+
+        (
+            "for let i = 10; i < 0; i += 1) {}", 
+            "TahaSyntaxError at line 1, column 5: Unexpected token type: LET, expected: LEFT_PAREN"
+        ),
+
+        (
+            "for (let i = 10 i < 0; i += 1) {}", 
+            "TahaSyntaxError at line 1, column 17: Unexpected token type: IDENTIFIER, expected: SEMICOLON"
+        ),
+
+        (
+            "for (let i = 10; i < 0 i += 1) {}", 
+            "TahaSyntaxError at line 1, column 24: Unexpected token type: IDENTIFIER, expected: SEMICOLON"
+        ),
+
+        (
+            "for (let i  10; i < 0 i += 1) {}", 
+            "TahaSyntaxError at line 1, column 13: Unexpected token type: INTEGER, expected: EQUAL"
+        ),
+
+        (
+            "for (let i = 10; i  0 i += 1) {}", 
+            "TahaSyntaxError at line 1, column 21: Unexpected token type: INTEGER, expected: SEMICOLON"
+        ),
+
+    ]
+)
+def test_for_statement_syntax_errors(source, error_msg):
+    with pytest.raises(TahaSyntaxError) as exc:
+        parse_source(source)
+
+    assert str(exc.value) == error_msg
