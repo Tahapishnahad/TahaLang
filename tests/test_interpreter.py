@@ -403,6 +403,16 @@ def if_statement(condition, then_branch, else_branch):
         location=make_location()
     )
 
+def for_statement(init, condition, update, body):
+    return make_node(
+        ForStatement,
+        init=init,
+        condition=condition,
+        update=update,
+        body=body,
+        location=make_location()
+    )
+
 @pytest.fixture
 def env():
     return Environment()
@@ -1909,3 +1919,339 @@ def test_block_print_statement_raises_error(interpreter, env):
 
     with pytest.raises(TahaRuntimeError):
         interpreter.execute_statement(statement, env)
+
+def test_for_statement(capsys, interpreter, env):
+    statement = for_statement(
+        init=LetStatement(
+            name="x",
+            value=number(0),
+            location=LOC
+        ),
+
+        condition=binary(
+            identifier("x"),
+            TokenType.LESS,
+            number(3)
+        ),
+
+        update=compound_assign_statement(
+            name="x",
+            value=number(1),
+            operator=TokenType.PLUS_EQUAL
+        ),
+
+        body=block_statement(
+            statements=[
+                CallStatement(
+                    call(
+                        callee=identifier("print"),
+                        arguments=[identifier("x")]
+                    )
+                )
+            ]
+        )
+    )
+
+    interpreter.execute_statement(
+        statement,
+        env
+    )
+
+    assert capsys.readouterr().out == "0\n1\n2\n"
+
+def test_for_statement_with_multiplication_update(capsys, interpreter, env):
+    statement = for_statement(
+        init=LetStatement(
+            name="x",
+            value=number(1),
+            location=LOC
+        ),
+
+        condition=binary(
+            identifier("x"),
+            TokenType.LESS_EQUAL,
+            number(4)
+        ),
+
+        update=compound_assign_statement(
+            name="x",
+            value=number(2),
+            operator=TokenType.STAR_EQUAL
+        ),
+
+        body=block_statement(
+            statements=[
+                CallStatement(
+                    call(
+                        callee=identifier("print"),
+                        arguments=[identifier("x")]
+                    )
+                )
+            ]
+        )
+    )
+
+    interpreter.execute_statement(
+        statement,
+        env
+    )
+
+    assert capsys.readouterr().out == "1\n2\n4\n"
+
+def test_for_statement_variable_scope_isolation(interpreter, env):
+    program = Program(
+        statements=[
+            for_statement(
+                init=LetStatement(
+                    name="x",
+                    value=number(0),
+                    location=LOC
+                ),
+
+                condition=binary(
+                    identifier("x"),
+                    TokenType.LESS_EQUAL,
+                    number(2)
+                ),
+
+                update=compound_assign_statement(
+                    name="x",
+                    value=number(1),
+                    operator=TokenType.PLUS_EQUAL
+                ),
+
+                body=block_statement(
+                    statements=[
+                        LetStatement(
+                            name="i",
+                            value=number(40),
+                            location=LOC
+                        )
+                    ]
+                )
+            ),
+
+            CallStatement(
+                call(
+                    callee=identifier("print"),
+                    arguments=[identifier("i")]
+                )
+            )
+
+        ]
+    )
+
+    with pytest.raises(TahaRuntimeError):
+        interpreter.execute_program(
+            program,
+            env
+        )
+
+def test_for_statement_loop_variable_scope_isolation(interpreter, env):
+    program = Program(
+        statements=[
+            for_statement(
+                init=LetStatement(
+                    name="x",
+                    value=number(0),
+                    location=LOC
+                ),
+
+                condition=binary(
+                    identifier("x"),
+                    TokenType.LESS_EQUAL,
+                    number(2)
+                ),
+
+                update=compound_assign_statement(
+                    name="x",
+                    value=number(1),
+                    operator=TokenType.PLUS_EQUAL
+                ),
+
+                body=block_statement(
+                    statements=[
+                        CallStatement(
+                            call(
+                                callee=identifier("print"),
+                                arguments=[string("...Test...")]
+                            )
+                        )
+                    ]
+                )
+            ),
+
+            CallStatement(
+                call(
+                    callee=identifier("print"),
+                    arguments=[identifier("x")]
+                )
+            )
+
+        ]
+    )
+
+    with pytest.raises(TahaRuntimeError):
+        interpreter.execute_program(
+            program,
+            env
+        )
+
+def test_for_statement_raises_error_with_invalid_condition_type(interpreter, env):
+    statement = for_statement(
+        init=LetStatement(
+            name="x",
+            value=number(0),
+           location=LOC
+        ),
+
+        condition=number(3),
+
+        update=compound_assign_statement(
+            name="x",
+            value=number(1),
+            operator=TokenType.PLUS_EQUAL
+        ),
+
+        body=block_statement(
+            statements=[
+                CallStatement(
+                    call(
+                        callee=identifier("print"),
+                        arguments=[identifier("x")]
+                    )
+                )
+            ]
+        )
+    )
+
+    with pytest.raises(TahaRuntimeError) as exc:
+        interpreter.execute_statement(statement, env)
+
+    assert str(exc.value) == "TahaRuntimeError at line 1, column 1: For condition must be a boolean, got int."
+
+def test_for_statement_raises_error_with_invalid_update_type(interpreter, env):
+    statement = for_statement(
+        init=LetStatement(
+            name="x",
+            value=number(0),
+           location=LOC
+        ),
+
+        condition=binary(
+            left=identifier("x"),
+            operator=TokenType.EQUAL_EQUAL,
+            right=number(100)
+        ),
+
+        update=boolean(True),
+
+        body=block_statement(
+            statements=[
+                CallStatement(
+                    call(
+                        callee=identifier("print"),
+                        arguments=[identifier("x")]
+                    )
+                )
+            ]
+        )
+    )
+
+    with pytest.raises(TahaRuntimeError) as exc:
+        interpreter.execute_statement(statement, env)
+
+    assert str(exc.value) == "TahaRuntimeError at line 1, column 1: For update must be an assignment (=, +=, -=, *=, /=, %=), got BooleanLiteral."
+
+def test_for_statement_will_not_execute_with_false_condition(capsys, interpreter, env):
+    statement = for_statement(
+        init=LetStatement(
+            name="x",
+            value=number(100),
+           location=LOC
+        ),
+
+        condition=binary(
+            left=identifier("x"),
+            operator=TokenType.LESS,
+            right=number(50)
+        ),
+
+        update=compound_assign_statement(
+            name="x",
+            operator=TokenType.PLUS_EQUAL,
+            value=number(1)
+        ),
+
+        body=block_statement(
+            statements=[
+                CallStatement(
+                    call(
+                        callee=identifier("print"),
+                        arguments=[identifier("x")]
+                    )
+                )
+            ]
+        )
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert capsys.readouterr().out == ""
+
+def test_for_statement_update_will_execute_once_in_every_time(capsys, interpreter, env):
+    program = Program(
+        statements=[
+
+            LetStatement(
+                name="counter",
+                value=number(0),
+                location=LOC
+            ),
+
+            for_statement(
+                init=LetStatement(
+                    name="x",
+                    value=number(0),
+                    location=LOC
+                ),
+
+                condition=binary(
+                    identifier("x"),
+                    TokenType.LESS_EQUAL,
+                    number(10)
+                ),
+
+                update=compound_assign_statement(
+                    name="x",
+                    value=number(1),
+                    operator=TokenType.PLUS_EQUAL
+                ),
+
+                body=block_statement(
+                    statements=[
+
+                        CallStatement(
+                            call=call(
+                                callee=identifier("print"),
+                                arguments=[
+                                    identifier("counter")
+                                ]
+                            )
+                        ),
+
+                        compound_assign_statement(
+                            "counter",
+                            value=number(1),
+                            operator=TokenType.PLUS_EQUAL
+                        )
+                    ]
+                )
+            ),
+
+        ]
+    )
+
+    interpreter.execute_program(program, env)
+
+    assert capsys.readouterr().out == "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"

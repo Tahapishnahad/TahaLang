@@ -528,6 +528,65 @@ Result:
 4
 ```
 
+### For Loop (NEW in 1.1.0)
+
+The `for` loop declares a variable and repeatedly executes a block of statements as long as its condition evaluates to `True`.
+
+The loop consists of three parts:
+
+- **Init:** Declares and initializes the loop variable. It executes only once, before the loop starts.
+- **Condition:** Must evaluate to a Boolean value. The loop continues while the condition is `True`.
+- **Update:** Executes once after the entire loop body has finished. It must be an assignment or compound assignment statement.
+
+#### Features
+
+- The condition must evaluate to a Boolean value.
+- If the condition is `False` initially, the loop body is never executed.
+- The loop continues until the condition becomes `False`.
+- If the condition never becomes `False`, the loop runs indefinitely.
+- The loop variable is scoped to the loop and cannot be accessed outside it.
+- The loop body has its own scope.
+
+#### Syntax
+
+```taha
+for (init; condition; update) {
+    statements
+}
+```
+
+#### Execution Order
+
+1. Execute Init once.
+2. Evaluate Condition.
+3. If Condition is `False`, exit the loop.
+4. Execute the body statements.
+5. Execute Update.
+6. Return to step 2.
+
+#### Example
+
+```taha
+for (let i = 1; i <= 10; i += 1) {
+    print(i)
+}
+```
+
+**Output:**
+
+```text
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+```
+
 ### Single Line Comments (NEW in 1.1.0)
 
 TahaLang supports single-line comments.
@@ -591,6 +650,8 @@ Examples include:
 - Invalid function calls or argument counts
 - Invalid built-in function arguments
 - Invalid `while` loop condition types
+- Invalid `for` loop condition types
+- Invalid `for` loop update types
 
 ### Error Information
 

@@ -332,6 +332,12 @@ class Interpreter:
                 env=env
             )
 
+        elif isinstance(statement, ForStatement):
+            self.execute_for_statement(
+                statement=statement,
+                env=env
+            )
+
     def execute_call_statement(self, statement: CallStatement, env: Environment):
         self.execute_call_expression(
             expr=statement.call,
@@ -550,14 +556,6 @@ class Interpreter:
                 )
 
     def execute_while_statement(self, statement: WhileStatement, env: Environment):
-        # condition_value = self.execute_expression(expr=statement.condition, env=env)
-
-        # if type(condition_value) != bool:
-        #     raise TahaRuntimeError.unexpected_while_condition_type(
-        #         line=statement.condition.location.line,
-        #         column=statement.condition.location.column,
-        #         condition_type=type(condition_value).__name__
-        #     )
 
         while condition_value := self.execute_expression(expr=statement.condition, env=env):
 
@@ -570,7 +568,40 @@ class Interpreter:
 
             for statement_ in statement.body.statements:
                 self.execute_statement(statement=statement_, env=env)
-        
+
+    def execute_for_statement(self, statement: ForStatement, env: Environment):
+        loop_env = Environment(parent=env)
+
+        self.execute_let_statement(statement=statement.init, env=loop_env)
+
+        if not (
+            isinstance(statement.update, AssignmentStatement) or 
+            isinstance(statement.update, CompoundAssignmentStatement)
+        ):
+            raise TahaRuntimeError.unexpected_for_update_statement_type(
+                line=statement.update.location.line,
+                column=statement.update.location.column,
+                update_type=type(statement.update).__name__
+            )
+
+        while True:
+
+            condition = self.execute_expression(statement.condition, loop_env)
+
+            if type(condition) != bool:
+                raise TahaRuntimeError.unexpected_for_condition_type(
+                    line=statement.condition.location.line,
+                    column=statement.condition.location.column,
+                    condition_type=type(condition).__name__
+                )
+
+            if condition:
+
+                self.execute_block_statement(statement.body, loop_env)
+                self.execute_statement(statement=statement.update, env=loop_env)
+
+            else:
+                return
 
     def is_number(self, value: object) -> bool:
         return type(value) in (int, float)

@@ -171,3 +171,11 @@ class TahaRuntimeError(TahaLangError):
     @classmethod
     def unexpected_while_condition_type(cls, line, column, condition_type):
         return cls(f"While condition must be a boolean, got {condition_type}.", line, column)
+
+    @classmethod
+    def unexpected_for_condition_type(cls, line, column, condition_type):
+        return cls(f"For condition must be a boolean, got {condition_type}.", line, column)
+
+    @classmethod
+    def unexpected_for_update_statement_type(cls, line, column, update_type):
+        return cls(f"For update must be an assignment (=, +=, -=, *=, /=, %=), got {update_type}.", line, column)
