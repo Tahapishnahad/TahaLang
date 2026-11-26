@@ -285,3 +285,18 @@ class ForStatement(Statement):
     update: Statement
     body: BlockStatement
     location: SourceLocation
+
+@dataclass
+class RepeatStatement(Statement):
+    """
+    Represents a repeat loop statement. format: repeat(times) {statements}
+
+    Arguments:
+        times: A part of repeat loop statament (Expression) who defines who many time body stataments must execute.
+        body: A part of repeat loop statement who its stataments must execute 'times' times.
+        location: The source location of the repeat loop statement.
+    """
+
+    times: Expression
+    body: BlockStatement
+    location: SourceLocation

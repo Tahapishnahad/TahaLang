@@ -20,7 +20,8 @@ from ast_nodes import (
     AssignmentStatement,
     CompoundAssignmentStatement,
     WhileStatement,
-    ForStatement
+    ForStatement,
+    RepeatStatement
 )
 
 LOC = SourceLocation(1, 1)
@@ -625,3 +626,104 @@ def test_for_statement():
     assert statement.body.statements[0].call.callee.name == "print"
     assert len(statement.body.statements[0].call.arguments) == 1
     assert statement.body.statements[0].call.arguments[0].name == "x"
+
+def test_repeat_statement():
+
+    # repeat (5) { print("Hello") }
+
+    statement = RepeatStatement(
+        times=NumberLiteral(5, LOC),
+
+        body=BlockStatement(
+            statements=[
+                CallStatement(
+                    CallExpression(
+                        callee=Identifier("print", LOC),
+                        arguments=[StringLiteral("Hello", LOC)],
+                        location=LOC
+                    )
+                )
+            ],
+
+            location=LOC
+        ),
+
+        location=LOC
+    )
+
+    assert isinstance(statement, RepeatStatement)
+    assert isinstance(statement.times, NumberLiteral)
+    assert isinstance(statement.body, BlockStatement)
+    assert isinstance(statement.body.statements[0], CallStatement)
+    assert isinstance(statement.body.statements[0].call, CallExpression)
+    assert isinstance(statement.body.statements[0].call.callee, Identifier)
+    assert isinstance(statement.body.statements[0].call.arguments[0], StringLiteral)
+
+    assert statement.location == LOC
+    assert statement.times.location == LOC
+    assert statement.body.statements[0].call.location == LOC
+    assert statement.body.statements[0].call.callee.location == LOC
+    assert statement.body.statements[0].call.arguments[0].location == LOC
+
+    assert statement.times.value == 5
+
+    assert len(statement.body.statements) == 1
+    assert statement.body.statements[0].call.callee.name == "print"
+    assert len(statement.body.statements[0].call.arguments) == 1
+    assert statement.body.statements[0].call.arguments[0].value == "Hello"
+
+def test_repeat_statement_with_binary_times():
+
+    # repeat (2 + 3) { print("Hello") }
+
+    statement = RepeatStatement(
+        times=BinaryExpression(
+            left=NumberLiteral(2, LOC),
+            operator=TokenType.PLUS,
+            right=NumberLiteral(3, LOC),
+            location=LOC
+        ),
+
+        body=BlockStatement(
+            statements=[
+                CallStatement(
+                    CallExpression(
+                        callee=Identifier("print", LOC),
+                        arguments=[StringLiteral("Hello", LOC)],
+                        location=LOC
+                    )
+                )
+            ],
+
+            location=LOC
+        ),
+
+        location=LOC
+    )
+
+    assert isinstance(statement, RepeatStatement)
+    assert isinstance(statement.times, BinaryExpression)
+    assert isinstance(statement.times.left, NumberLiteral)
+    assert isinstance(statement.times.right, NumberLiteral)
+    assert isinstance(statement.body, BlockStatement)
+    assert isinstance(statement.body.statements[0], CallStatement)
+    assert isinstance(statement.body.statements[0].call, CallExpression)
+    assert isinstance(statement.body.statements[0].call.callee, Identifier)
+    assert isinstance(statement.body.statements[0].call.arguments[0], StringLiteral)
+
+    assert statement.location == LOC
+    assert statement.times.location == LOC
+    assert statement.times.left.location == LOC
+    assert statement.times.right.location == LOC
+    assert statement.body.statements[0].call.location == LOC
+    assert statement.body.statements[0].call.callee.location == LOC
+    assert statement.body.statements[0].call.arguments[0].location == LOC
+
+    assert statement.times.left.value == 2
+    assert statement.times.operator == TokenType.PLUS
+    assert statement.times.right.value == 3
+
+    assert len(statement.body.statements) == 1
+    assert statement.body.statements[0].call.callee.name == "print"
+    assert len(statement.body.statements[0].call.arguments) == 1
+    assert statement.body.statements[0].call.arguments[0].value == "Hello"

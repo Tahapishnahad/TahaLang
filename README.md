@@ -731,7 +731,6 @@ Potential directions for future versions include:
 - More comprehensive language tests
 - Further interpreter optimizations
 - Adding User-defined Functions
-- Adding a `for` loop
 
 ## Author
 

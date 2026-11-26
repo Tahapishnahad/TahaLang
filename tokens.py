@@ -14,6 +14,7 @@ class TokenType(Enum):
     FALSE = "FALSE"
     WHILE = "WHILE"
     FOR = "FOR"
+    REPEAT = "REPEAT"
 
     IDENTIFIER = "IDENTIFIER"
     INTEGER = "INTEGER"

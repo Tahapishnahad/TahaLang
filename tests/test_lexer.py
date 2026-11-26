@@ -269,11 +269,12 @@ def test_scan_identifier_keywords():
         ("True", TokenType.TRUE),
         ("False", TokenType.FALSE),
         ("while", TokenType.WHILE),
-        ("for", TokenType.FOR)
+        ("for", TokenType.FOR),
+        ("repeat", TokenType.REPEAT)
     ]
 
 
-    source = "let if else True False while for"
+    source = "let if else True False while for repeat"
     lexer = Lexer(source)
     tokens = lexer.scan_tokens()
 
@@ -568,6 +569,30 @@ def test_for_tokens_lexing():
         (TokenType.IDENTIFIER, "print"),
         (TokenType.LEFT_PAREN, "("),
         (TokenType.IDENTIFIER, "a"),
+        (TokenType.RIGHT_PAREN, ")"),
+        (TokenType.NEWLINE, "\n"),
+        (TokenType.RIGHT_BRACE, "}"),
+    ]
+
+    got = [(token.type, token.value) for token in tokens[:-1]]
+
+    assert got == expected
+
+def test_repeat_tokens_lexing():
+    source = 'repeat (5) {\n print("Hello!") \n}'
+    lexer = Lexer(source)
+    tokens = lexer.scan_tokens()
+
+    expected = [
+        (TokenType.REPEAT, "repeat"),
+        (TokenType.LEFT_PAREN, "("),
+        (TokenType.INTEGER, "5"),
+        (TokenType.RIGHT_PAREN, ")"),
+        (TokenType.LEFT_BRACE, "{"),
+        (TokenType.NEWLINE, "\n"),
+        (TokenType.IDENTIFIER, "print"),
+        (TokenType.LEFT_PAREN, "("),
+        (TokenType.STRING, "Hello!"),
         (TokenType.RIGHT_PAREN, ")"),
         (TokenType.NEWLINE, "\n"),
         (TokenType.RIGHT_BRACE, "}"),

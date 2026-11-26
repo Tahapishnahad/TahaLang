@@ -23,7 +23,8 @@ KEYWORDS = {
     "True": TokenType.TRUE,
     "False": TokenType.FALSE,
     "while": TokenType.WHILE,
-    "for": TokenType.FOR
+    "for": TokenType.FOR,
+    "repeat": TokenType.REPEAT
 }
 
 ESCAPE_ALLOWED = {"n", "t", "\\", "\""}
