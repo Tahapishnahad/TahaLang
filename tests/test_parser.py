@@ -24,7 +24,8 @@ from ast_nodes import (
     AssignmentStatement,
     CompoundAssignmentStatement,
     WhileStatement,
-    ForStatement
+    ForStatement,
+    RepeatStatement
 )
 from tokens import TokenType
 
@@ -1630,5 +1631,132 @@ def test_parse_for_statement_with_assignment_update():
 def test_for_statement_syntax_errors(source, error_msg):
     with pytest.raises(TahaSyntaxError) as exc:
         parse_source(source)
+
+    assert str(exc.value) == error_msg
+
+def test_repeat_statement_with_numeric_times():
+    source = 'repeat(10) {\nprint("YES")\n}'
+    repeat_ast = parse_source(source).statements[0]
+
+    assert isinstance(repeat_ast, RepeatStatement)
+    assert isinstance(repeat_ast.times, NumberLiteral)
+    assert isinstance(repeat_ast.body, BlockStatement)
+    assert isinstance(repeat_ast.body.statements[0], CallStatement)
+    assert isinstance(repeat_ast.body.statements[0].call, CallExpression)
+    assert isinstance(repeat_ast.body.statements[0].call.callee, Identifier)
+    assert isinstance(repeat_ast.body.statements[0].call.arguments[0], StringLiteral)
+
+    assert repeat_ast.location == SourceLocation(1, 1)
+    assert repeat_ast.times.location == SourceLocation(1, 8)
+    assert repeat_ast.body.location == SourceLocation(1, 12)
+    assert repeat_ast.body.statements[0].call.location == SourceLocation(2, 1)
+    assert repeat_ast.body.statements[0].call.callee.location == SourceLocation(2, 1)
+    assert repeat_ast.body.statements[0].call.arguments[0].location == SourceLocation(2, 7)
+
+    assert len(repeat_ast.body.statements) == 1
+    assert len(repeat_ast.body.statements[0].call.arguments) == 1
+
+    assert repeat_ast.times.value == 10
+
+    assert repeat_ast.body.statements[0].call.callee.name == "print"
+    assert repeat_ast.body.statements[0].call.arguments[0].value == "YES"
+
+def test_repeat_statement_with_expression_times():
+    source = 'repeat(5 + 3) {\nprint("YES")\n}'
+    repeat_ast = parse_source(source).statements[0]
+
+    assert isinstance(repeat_ast, RepeatStatement)
+    assert isinstance(repeat_ast.times, BinaryExpression)
+    assert isinstance(repeat_ast.times.left, NumberLiteral)
+    assert isinstance(repeat_ast.times.right, NumberLiteral)
+    assert isinstance(repeat_ast.body, BlockStatement)
+    assert isinstance(repeat_ast.body.statements[0], CallStatement)
+    assert isinstance(repeat_ast.body.statements[0].call, CallExpression)
+    assert isinstance(repeat_ast.body.statements[0].call.callee, Identifier)
+    assert isinstance(repeat_ast.body.statements[0].call.arguments[0], StringLiteral)
+
+    assert repeat_ast.location == SourceLocation(1, 1)
+    assert repeat_ast.times.location == SourceLocation(1, 8)
+    assert repeat_ast.body.location == SourceLocation(1, 15)
+    assert repeat_ast.body.statements[0].call.location == SourceLocation(2, 1)
+    assert repeat_ast.body.statements[0].call.callee.location == SourceLocation(2, 1)
+    assert repeat_ast.body.statements[0].call.arguments[0].location == SourceLocation(2, 7)
+
+    assert len(repeat_ast.body.statements) == 1
+    assert len(repeat_ast.body.statements[0].call.arguments) == 1
+
+    assert repeat_ast.times.left.value == 5
+    assert repeat_ast.times.operator == TokenType.PLUS
+    assert repeat_ast.times.right.value == 3
+
+    assert repeat_ast.body.statements[0].call.callee.name == "print"
+    assert repeat_ast.body.statements[0].call.arguments[0].value == "YES"
+
+def test_repeat_statement_with_identifier_times():
+    source = 'repeat(i) {\nprint(i)\n}'
+    repeat_ast = parse_source(source).statements[0]
+
+    assert isinstance(repeat_ast, RepeatStatement)
+    assert isinstance(repeat_ast.times, Identifier)
+    assert isinstance(repeat_ast.body, BlockStatement)
+    assert isinstance(repeat_ast.body.statements[0], CallStatement)
+    assert isinstance(repeat_ast.body.statements[0].call, CallExpression)
+    assert isinstance(repeat_ast.body.statements[0].call.callee, Identifier)
+    assert isinstance(repeat_ast.body.statements[0].call.arguments[0], Identifier)
+
+    assert repeat_ast.location == SourceLocation(1, 1)
+    assert repeat_ast.times.location == SourceLocation(1, 8)
+    assert repeat_ast.body.location == SourceLocation(1, 11)
+    assert repeat_ast.body.statements[0].call.location == SourceLocation(2, 1)
+    assert repeat_ast.body.statements[0].call.callee.location == SourceLocation(2, 1)
+    assert repeat_ast.body.statements[0].call.arguments[0].location == SourceLocation(2, 7)
+
+    assert len(repeat_ast.body.statements) == 1
+    assert len(repeat_ast.body.statements[0].call.arguments) == 1
+
+    assert repeat_ast.times.name == "i"
+
+    assert repeat_ast.body.statements[0].call.callee.name == "print"
+    assert repeat_ast.body.statements[0].call.arguments[0].name == "i"
+
+def test_repeat_statement_with_no_statements():
+    source = 'repeat(5) {}'
+    repeat_ast = parse_source(source).statements[0]
+
+    assert isinstance(repeat_ast, RepeatStatement)
+    assert isinstance(repeat_ast.times, NumberLiteral)
+    assert isinstance(repeat_ast.body, BlockStatement)
+
+    assert repeat_ast.location == SourceLocation(1, 1)
+    assert repeat_ast.times.location == SourceLocation(1, 8)
+    assert repeat_ast.body.location == SourceLocation(1, 11)
+
+    assert len(repeat_ast.body.statements) == 0
+
+@pytest.mark.parametrize(
+    ("source", "error_msg"),
+    [
+        (
+            "repeat () {}",
+            "TahaSyntaxError at line 1, column 9: Invalid expression."
+        ),
+
+        (
+            "repeat (9)", 
+            "TahaSyntaxError at line 1, column 11: Unexpected token type: EOF, expected: LEFT_BRACE"
+        ),
+
+        (
+            "repeat {}",
+            "TahaSyntaxError at line 1, column 8: Unexpected token type: LEFT_BRACE, expected: LEFT_PAREN"
+        ),
+
+    ]
+)
+def test_repeat_statement_syntax_errors(source, error_msg):
+    with pytest.raises(TahaSyntaxError) as exc:
+        parse_source(source)
+
+    print(str(exc.value))
 
     assert str(exc.value) == error_msg

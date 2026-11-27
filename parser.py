@@ -22,7 +22,8 @@ from ast_nodes import (
     AssignmentStatement,
     CompoundAssignmentStatement,
     WhileStatement,
-    ForStatement
+    ForStatement,
+    RepeatStatement
 )
 
 
@@ -108,6 +109,9 @@ class Parser:
 
             case TokenType.WHILE:
                 return self.parse_while_statement()
+
+            case TokenType.REPEAT:
+                return self.parse_repeat_statement()
 
             case _:
                 raise TahaSyntaxError.unexpected_token_type(
@@ -262,6 +266,22 @@ class Parser:
             init=init,
             condition=condition,
             update=update,
+            body=body,
+            location=location
+        )
+
+    def parse_repeat_statement(self):
+        location = self.get_location(self.current)
+        self.advance()
+
+        self.consume(TokenType.LEFT_PAREN)
+        times = self.parse_expression()
+        self.consume(TokenType.RIGHT_PAREN)
+
+        body = self.parse_block_statement()
+
+        return RepeatStatement(
+            times=times,
             body=body,
             location=location
         )
