@@ -566,7 +566,7 @@ for (init; condition; update) {
 5. Execute Update.
 6. Return to step 2.
 
-## Repeat Loop
+## Repeat Loop (NEW in 1.1.0)
 
 The `repeat` loop executes a block of statements a specified number of times.
 
