@@ -338,6 +338,12 @@ class Interpreter:
                 env=env
             )
 
+        elif isinstance(statement, RepeatStatement):
+            self.execute_repeat_statement(
+                statement=statement,
+                env=env
+            )
+
     def execute_call_statement(self, statement: CallStatement, env: Environment):
         self.execute_call_expression(
             expr=statement.call,
@@ -602,6 +608,26 @@ class Interpreter:
 
             else:
                 return
+
+    def execute_repeat_statement(self, statement: RepeatStatement, env: Environment):
+        times_value = self.execute_expression(statement.times, env=env)
+
+        if type(times_value) != int:
+            raise TahaRuntimeError.unexpected_repeat_times_expression_type(
+                line=statement.times.location.line,
+                column=statement.times.location.column,
+                times_type=type(times_value).__name__
+            )
+
+        if times_value < 0:
+            raise TahaRuntimeError.unexpected_repeat_times_expression_range(
+                line=statement.times.location.line,
+                column=statement.times.location.column,
+                times_value=times_value
+            )
+
+        for _ in range(times_value):
+            self.execute_block_statement(statement=statement.body, env=env)
 
     def is_number(self, value: object) -> bool:
         return type(value) in (int, float)

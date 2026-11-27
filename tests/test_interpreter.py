@@ -413,6 +413,14 @@ def for_statement(init, condition, update, body):
         location=make_location()
     )
 
+def repeat_statement(times, body):
+    return make_node(
+        RepeatStatement,
+        times=times,
+        body=body,
+        location=make_location()
+    )
+
 @pytest.fixture
 def env():
     return Environment()
@@ -2255,3 +2263,227 @@ def test_for_statement_update_will_execute_once_in_every_time(capsys, interprete
     interpreter.execute_program(program, env)
 
     assert capsys.readouterr().out == "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"
+
+def test_repeat_statement(capsys, interpreter, env):
+    statement = repeat_statement(
+        times=number(3),
+        body=block_statement(
+            statements=[
+                CallStatement(
+                    call=call(
+                        callee=identifier("print"),
+                        arguments=[string("Hi")]
+                    )
+                )
+            ]
+        )
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert capsys.readouterr().out == "Hi\nHi\nHi\n"
+    assert capsys.readouterr().err == ""
+
+def test_repeat_statement_with_expression_times(capsys, interpreter, env):
+    statement = repeat_statement(
+        times=binary(
+            left=number(2),
+            operator=TokenType.PLUS,
+            right=number(2)
+        ),
+        body=block_statement(
+            statements=[
+                CallStatement(
+                    call=call(
+                        callee=identifier("print"),
+                        arguments=[string("Hi")]
+                    )
+                )
+            ]
+        )
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert capsys.readouterr().out == "Hi\nHi\nHi\nHi\n"
+    assert capsys.readouterr().err == ""
+
+def test_repeat_statement_with_zero_times(capsys, interpreter, env):
+    statement = repeat_statement(
+        times=number(0),
+        body=block_statement(
+            statements=[
+                CallStatement(
+                    call=call(
+                        callee=identifier("print"),
+                        arguments=[string("Hi")]
+                    )
+                )
+            ]
+        )
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert capsys.readouterr().out == ""
+    assert capsys.readouterr().err == ""
+
+def test_repeat_statement_with_multiple_statements(capsys, interpreter, env):
+    statement = repeat_statement(
+        times=number(3),
+        body=block_statement(
+            statements=[
+                CallStatement(
+                    call=call(
+                        callee=identifier("print"),
+                        arguments=[string("Hi")]
+                    )
+                ),
+
+                CallStatement(
+                    call=call(
+                        callee=identifier("print"),
+                        arguments=[string("---")]
+                    )
+                ),
+            ]
+        )
+    )
+
+    interpreter.execute_statement(statement, env)
+
+    assert capsys.readouterr().out == "Hi\n---\nHi\n---\nHi\n---\n"
+    assert capsys.readouterr().err == ""
+
+def test_repeat_statement_with_identifier_times(capsys, interpreter, env):
+    program = Program(
+        statements=[
+
+            LetStatement(
+                name="i",
+                value=number(2),
+                location=LOC
+            ),
+
+            repeat_statement(
+                times=identifier("i"),
+                body=block_statement(
+                    statements=[
+                        CallStatement(
+                            call=call(
+                                callee=identifier("print"),
+                                arguments=[string("Hi")]
+                            )
+                        )
+                    ]
+                )
+            )
+        ]
+    )
+
+    interpreter.execute_program(program, env)
+
+    assert capsys.readouterr().out == "Hi\nHi\n"
+    assert capsys.readouterr().err == ""
+
+def test_repeat_statement_with_identifier_and_expression_times(capsys, interpreter, env):
+    program = Program(
+        statements=[
+
+            LetStatement(
+                name="i",
+                value=number(2),
+                location=LOC
+            ),
+
+            repeat_statement(
+                times=binary(
+                    left=identifier("i"),
+                    operator=TokenType.PLUS,
+                    right=number(2)
+                ),
+                body=block_statement(
+                    statements=[
+                        CallStatement(
+                            call=call(
+                                callee=identifier("print"),
+                                arguments=[string("Hi")]
+                            )
+                        )
+                    ]
+                )
+            )
+        ]
+    )
+
+    interpreter.execute_program(program, env)
+
+    assert capsys.readouterr().out == "Hi\nHi\nHi\nHi\n"
+    assert capsys.readouterr().err == ""
+
+@pytest.mark.parametrize(
+    ("invalid_value", "invalid_type"),
+    [
+        (string("String"), str),
+        (boolean(True), bool),
+        (number(0.3), float),
+        (list([number(1), number(2), number(3)]), list),
+    ]
+)
+def test_repeat_statement_raises_error_with_invalid_times_type(capsys, interpreter, env, invalid_value, invalid_type):
+    statement = repeat_statement(
+        times=invalid_value,
+        body=block_statement(
+            statements=[
+                CallStatement(
+                    call=call(
+                        callee=identifier("print"),
+                        arguments=[string("Hi")]
+                    )
+                )
+            ]
+        )
+    )
+
+    with pytest.raises(TahaRuntimeError) as exc:
+        interpreter.execute_statement(statement, env)
+
+    assert str(exc.value) == f"TahaRuntimeError at line 1, column 1: Repeat 'times' must be int, got {invalid_type.__name__}."
+    assert capsys.readouterr().out == ""
+    assert capsys.readouterr().err == ""
+
+@pytest.mark.parametrize(
+    ("invalid_value", "expected_value"),
+    [
+        (number(-2), -2),
+        (
+            binary(
+                left=number(2),
+                operator=TokenType.MINUS,
+                right=number(3)
+            ),
+            -1
+        ),
+    ]
+)
+def test_repeat_statement_raises_error_with_invalid_times_range(capsys, interpreter, env, invalid_value, expected_value):
+    statement = repeat_statement(
+        times=invalid_value,
+        body=block_statement(
+            statements=[
+                CallStatement(
+                    call=call(
+                        callee=identifier("print"),
+                        arguments=[string("Hi")]
+                    )
+                )
+            ]
+        )
+    )
+
+    with pytest.raises(TahaRuntimeError) as exc:
+        interpreter.execute_statement(statement, env)
+
+    assert str(exc.value) == f"TahaRuntimeError at line 1, column 1: Repeat 'times' must be positive or zero, got {expected_value}."
+    assert capsys.readouterr().out == ""
+    assert capsys.readouterr().err == ""

@@ -179,3 +179,11 @@ class TahaRuntimeError(TahaLangError):
     @classmethod
     def unexpected_for_update_statement_type(cls, line, column, update_type):
         return cls(f"For update must be an assignment (=, +=, -=, *=, /=, %=), got {update_type}.", line, column)
+
+    @classmethod
+    def unexpected_repeat_times_expression_type(cls, line, column, times_type):
+        return cls(f"Repeat 'times' must be int, got {times_type}.", line, column)
+
+    @classmethod
+    def unexpected_repeat_times_expression_range(cls, line, column, times_value):
+        return cls(f"Repeat 'times' must be positive or zero, got {times_value}.", line, column)

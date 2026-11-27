@@ -34,6 +34,8 @@ Rather than relying on existing interpreter frameworks, its core components were
 - Assignment operators
 - Unary operators
 - While loops
+- For Loops
+- Repeat Loops
 - Built-ins and Builtin Registry
 - Operator precedence
 - Parenthesized expressions
@@ -564,6 +566,105 @@ for (init; condition; update) {
 5. Execute Update.
 6. Return to step 2.
 
+## Repeat Loop
+
+The `repeat` loop executes a block of statements a specified number of times.
+
+### Syntax
+
+```taha
+repeat (times) {
+    statements
+}
+```
+
+The `times` expression determines how many times the loop body is executed.
+
+### Examples
+
+**1. Numeric value**
+
+```taha
+repeat (3) {
+    print("Hello")
+}
+```
+
+Output:
+
+```text
+Hello
+Hello
+Hello
+```
+
+**2. Arithmetic expression**
+
+```taha
+repeat (2 + 3) {
+    print("TahaLang")
+}
+```
+
+The expression is evaluated once before the loop starts.
+
+**3. Variable**
+
+```taha
+let count = 4
+
+repeat (count) {
+    print("Running")
+}
+```
+
+### Behavior
+
+- The `times` expression is evaluated only once before execution.
+- The expression must evaluate to an integer.
+- Positive integers determine the number of iterations.
+- A value of `0` skips the loop body entirely.
+- Negative values cause a runtime error.
+- Non-integer values cause a runtime error.
+- The loop body is executed once per iteration.
+
+### Runtime Errors
+
+The `repeat` loop raises a runtime error when:
+
+- The `times` expression evaluates to a non-integer value.
+- The `times` expression evaluates to a negative integer.
+
+For example:
+
+```taha
+repeat (-2) {
+    print("Hello")
+}
+```
+
+This produces a runtime error because negative iteration counts are not allowed.
+
+```taha
+repeat (2.5) {
+    print("Hello")
+}
+```
+
+This also produces a runtime error because the iteration count must be an integer.
+
+### Zero Iterations
+
+A zero iteration count is valid:
+
+```taha
+repeat (0) {
+    print("This will not be printed")
+}
+```
+
+The loop body is skipped completely.
+
 #### Example
 
 ```taha
@@ -652,6 +753,8 @@ Examples include:
 - Invalid `while` loop condition types
 - Invalid `for` loop condition types
 - Invalid `for` loop update types
+- The `times` expression evaluates to a non-integer value.
+- The `times` expression evaluates to a negative integer.
 
 ### Error Information
 
