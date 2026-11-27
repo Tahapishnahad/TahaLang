@@ -566,6 +566,29 @@ for (init; condition; update) {
 5. Execute Update.
 6. Return to step 2.
 
+#### Example
+
+```taha
+for (let i = 1; i <= 10; i += 1) {
+    print(i)
+}
+```
+
+**Output:**
+
+```text
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+```
+
 ## Repeat Loop (NEW in 1.1.0)
 
 The `repeat` loop executes a block of statements a specified number of times.
@@ -665,28 +688,6 @@ repeat (0) {
 
 The loop body is skipped completely.
 
-#### Example
-
-```taha
-for (let i = 1; i <= 10; i += 1) {
-    print(i)
-}
-```
-
-**Output:**
-
-```text
-1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-```
 
 ### Single Line Comments (NEW in 1.1.0)
 
