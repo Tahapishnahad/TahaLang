@@ -101,6 +101,7 @@ TahaLang/
 ├── tokens.py
 ├── errors.py
 ├── taha_builtins.py
+├── diagnostics.py (IN DEVELOPMENT)
 │
 ├── tests/
 │   ├── __init__.py
@@ -111,7 +112,8 @@ TahaLang/
 │   ├── test_interpreter.py
 │   ├── test_errors.py
 │   ├── test_builtins.py
-│   └── test_main.py
+│   ├── test_main.py
+│   └── test_diagnostics.py (IN DEVELOPMENT)
 │
 ├── README.md
 ├── requirements.txt
